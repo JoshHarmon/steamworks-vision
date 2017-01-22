@@ -1,0 +1,200 @@
+<grip:Pipeline>
+  <sources>
+    <grip:MultiImageFile>
+      <property name="path[21]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH9ftD3Angle0Brightness.jpg"/>
+      <property name="path[24]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH10ftD3Angle0Brightness.jpg"/>
+      <property name="path[27]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH12ftD2Angle0Brightness.jpg"/>
+      <property name="path[40]" value="/Users/edoardo/Desktop/BoilerLedimages/d120-h9-~40deg-~40offleft.jpg"/>
+      <property name="path[0]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH2ftD0Angle0Brightness.jpg"/>
+      <property name="path[43]" value="/Users/edoardo/Desktop/BoilerLedimages/d163-h9-~40deg-offleft.jpg"/>
+      <property name="path[11]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH6ftD1Angle0Brightness.jpg"/>
+      <property name="path[3]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH3ftD3Angle0Brightness.jpg"/>
+      <property name="path[14]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH7ftD2Angle0Brightness.jpg"/>
+      <property name="path[6]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH4ftD2Angle0Brightness.jpg"/>
+      <property name="path[17]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH8ftD2Angle0Brightness.jpg"/>
+      <property name="path[9]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH5ftD2Angle0Brightness.jpg"/>
+      <property name="path[30]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH14ftD3Angle0Brightness.jpg"/>
+      <property name="path[33]" value="/Users/edoardo/Desktop/BoilerLedimages/d55-h9-~40deg-offleft.jpg"/>
+      <property name="path[36]" value="/Users/edoardo/Desktop/BoilerLedimages/d96-h9-~40deg-offleft.jpg"/>
+      <property name="path[39]" value="/Users/edoardo/Desktop/BoilerLedimages/d120-h9-~40deg-~40degoff.jpg"/>
+      <property name="path[20]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH9ftD2Angle0Brightness.jpg"/>
+      <property name="path[23]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH10ftD2Angle0Brightness.jpg"/>
+      <property name="path[26]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH11ftD3Angle0Brightness.jpg"/>
+      <property name="path[29]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH13ftD3Angle0Brightness.jpg"/>
+      <property name="path[42]" value="/Users/edoardo/Desktop/BoilerLedimages/d128-h9-~60deg-offleft.jpg"/>
+      <property name="path[10]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH5ftD3Angle0Brightness.jpg"/>
+      <property name="path[2]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH3ftD2Angle0Brightness.jpg"/>
+      <property name="path[13]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH7ftD1Angle0Brightness.jpg"/>
+      <property name="path[5]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH4ftD1Angle0Brightness.jpg"/>
+      <property name="path[16]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH8ftD1Angle0Brightness.jpg"/>
+      <property name="path[8]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH5ftD1Angle0Brightness.jpg"/>
+      <property name="path[19]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH9ftD1Angle0Brightness.jpg"/>
+      <property name="path[32]" value="/Users/edoardo/Desktop/BoilerLedimages/d32-h8-~60deg-offleft.jpg"/>
+      <property name="path[35]" value="/Users/edoardo/Desktop/BoilerLedimages/d64-h9-~60deg-offleft.jpg"/>
+      <property name="path[38]" value="/Users/edoardo/Desktop/BoilerLedimages/d120-h9-~40deg-~25degoffright.jpg"/>
+      <property name="index" value="31"/>
+      <property name="path[22]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH10ftD1Angle0Brightness.jpg"/>
+      <property name="path[25]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH11ftD2Angle0Brightness.jpg"/>
+      <property name="path[28]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH12ftD3Angle0Brightness.jpg"/>
+      <property name="path[41]" value="/Users/edoardo/Desktop/BoilerLedimages/d128-h9-~40deg-offleft.jpg"/>
+      <property name="path[1]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH3ftD0Angle0Brightness.jpg"/>
+      <property name="path[44]" value="/Users/edoardo/Desktop/BoilerLedimages/d215-h9-~40deg-offleft.jpg"/>
+      <property name="path[4]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH4ftD0Angle0Brightness.jpg"/>
+      <property name="path[12]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH6ftD3Angle0Brightness.jpg"/>
+      <property name="path[7]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH4ftD3Angle0Brightness.jpg"/>
+      <property name="path[15]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH7ftD3Angle0Brightness.jpg"/>
+      <property name="path[18]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH8ftD3Angle0Brightness.jpg"/>
+      <property name="numImages" value="45"/>
+      <property name="path[31]" value="/Users/edoardo/Desktop/BoilerLedimages/1ftH150ftD0Angle0Brightness.jpg"/>
+      <property name="path[34]" value="/Users/edoardo/Desktop/BoilerLedimages/d64-h9-~40deg-offleft.jpg"/>
+      <property name="path[37]" value="/Users/edoardo/Desktop/BoilerLedimages/d96-h9-~60deg-offleft.jpg"/>
+    </grip:MultiImageFile>
+  </sources>
+  <steps>
+    <grip:Step name="RGB Threshold">
+      <grip:Input step="0" socket="0"/>
+      <grip:Input step="0" socket="1">
+        <value>
+          <double>62.71468553632102</double>
+          <double>202.79564039769883</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="0" socket="2">
+        <value>
+          <double>206.15557553956833</double>
+          <double>255.0</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="0" socket="3">
+        <value>
+          <double>176.4755766047806</double>
+          <double>253.92219129204693</double>
+        </value>
+      </grip:Input>
+      <grip:Output step="0" socket="0" previewed="true"/>
+    </grip:Step>
+    <grip:Step name="CV dilate">
+      <grip:Input step="1" socket="0"/>
+      <grip:Input step="1" socket="1"/>
+      <grip:Input step="1" socket="2"/>
+      <grip:Input step="1" socket="3">
+        <value>1.0</value>
+      </grip:Input>
+      <grip:Input step="1" socket="4">
+        <value>BORDER_CONSTANT</value>
+      </grip:Input>
+      <grip:Input step="1" socket="5"/>
+      <grip:Output step="1" socket="0" previewed="false"/>
+    </grip:Step>
+    <grip:Step name="Find Contours">
+      <grip:Input step="2" socket="0"/>
+      <grip:Input step="2" socket="1">
+        <value>false</value>
+      </grip:Input>
+      <grip:Output step="2" socket="0" previewed="false"/>
+    </grip:Step>
+    <grip:Step name="Filter Contours">
+      <grip:Input step="3" socket="0"/>
+      <grip:Input step="3" socket="1">
+        <value>100.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="2">
+        <value>0.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="3">
+        <value>0.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="4">
+        <value>1000.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="5">
+        <value>0.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="6">
+        <value>1000.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="7">
+        <value>
+          <double>0.0</double>
+          <double>100.0</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="3" socket="8">
+        <value>1000000.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="9">
+        <value>0.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="10">
+        <value>0.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="11">
+        <value>1000.0</value>
+      </grip:Input>
+      <grip:Output step="3" socket="0" previewed="true"/>
+    </grip:Step>
+    <grip:Step name="HTTP Publish ContoursReport">
+      <grip:Input step="4" socket="0"/>
+      <grip:Input step="4" socket="1">
+        <value>myContoursReport</value>
+      </grip:Input>
+      <grip:Input step="4" socket="2">
+        <value>true</value>
+      </grip:Input>
+      <grip:Input step="4" socket="3">
+        <value>true</value>
+      </grip:Input>
+      <grip:Input step="4" socket="4">
+        <value>true</value>
+      </grip:Input>
+      <grip:Input step="4" socket="5">
+        <value>true</value>
+      </grip:Input>
+      <grip:Input step="4" socket="6">
+        <value>true</value>
+      </grip:Input>
+      <grip:Input step="4" socket="7">
+        <value>true</value>
+      </grip:Input>
+    </grip:Step>
+  </steps>
+  <connections>
+    <grip:Connection>
+      <grip:Output step="1" socket="0" previewed="false"/>
+      <grip:Input step="2" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="2" socket="0" previewed="false"/>
+      <grip:Input step="3" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output source="0" socket="0" previewed="true"/>
+      <grip:Input step="0" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="3" socket="0" previewed="true"/>
+      <grip:Input step="4" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="0" socket="0" previewed="true"/>
+      <grip:Input step="1" socket="0"/>
+    </grip:Connection>
+  </connections>
+  <settings>
+    <teamNumber>0</teamNumber>
+    <publishAddress>roboRIO-0-FRC.local</publishAddress>
+    <deployAddress>roboRIO-0-FRC.local</deployAddress>
+    <deployDir>/home/lvuser</deployDir>
+    <deployUser>lvuser</deployUser>
+    <deployJavaHome>/usr/local/frc/JRE/</deployJavaHome>
+    <deployJvmOptions>-Xmx50m -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:MaxNewSize=16m</deployJvmOptions>
+  </settings>
+  <codeGenerationSettings>
+    <language>Java</language>
+    <className>GripPipeline</className>
+    <implementWpilibPipeline>false</implementWpilibPipeline>
+    <saveDir>/Users/edoardo/GRIP</saveDir>
+    <packageName></packageName>
+    <moduleName>grip</moduleName>
+  </codeGenerationSettings>
+</grip:Pipeline>
