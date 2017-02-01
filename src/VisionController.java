@@ -1,3 +1,8 @@
+import java.util.ArrayList;
+
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+
 import edu.wpi.cscore.VideoSource;
 import edu.wpi.first.wpilibj.vision.VisionPipeline;
 import edu.wpi.first.wpilibj.vision.VisionRunner;
@@ -32,6 +37,18 @@ public class VisionController {
 	private VisionPipeline shooterPipeline;
 
 	private VisionPipeline gearPipeline;
+	
+	private VisionRunner<BoilerLedPipeline> shooterRunner = new VisionRunner<BoilerLedPipeline>(
+			this.shooterSource,
+			(BoilerLedPipeline) this.shooterPipeline,
+			this.shooterListener
+	);
+	
+	private VisionRunner gearRunner = new VisionRunner<PegDetectionPipeline>(
+			this.gearSource,
+			(PegDetectionPipeline) this.gearPipeline,
+			this.gearListener
+	);
 
 	private VisionRunner.Listener<BoilerLedPipeline> shooterListener;
 
@@ -40,6 +57,12 @@ public class VisionController {
 	private VisionThread shooterThread; // needs: VideoSource, Pipeline, VisionRunner.Listener
 
 	private VisionThread gearThread; // needs: VideoSource, Pipeline, VisionRunner.Listener
+	
+	Object imgLock = new Object();
+	
+	private Mat rgbFilteredImage;
+	
+	private ArrayList<MatOfPoint> filteredContours;
 /*
 
 Dummy VideoSource
@@ -48,43 +71,40 @@ source = new VideoCamera(0);
 
 source.setResolution(1280, 720);
 
-
-
-
 */
 	public VisionController(VideoSource shooterSource, VideoSource gearSource,
-							VisionPipeline shooterPipeline, VisionPipeline gearPipeline) {
+							VisionPipeline shooterPipeline, VisionPipeline gearPipeline)
+	{
 		this.shooterSource = shooterSource;
 		this.gearSource = gearSource;
 
 		this.shooterPipeline = shooterPipeline;
 		this.gearPipeline = gearPipeline;
 
-		/*
-		 * TODO: Add the copyPipelineOutputs methods to copy the data. Make sure to use/copy with a mutex to avoid
-		 *		 crazy things happening. 
-		 */
-		this.shooterListener = new VisionRunner.Listener<BoilerLedPipeline>(this.shooterPipeline);
-		this.gearListener = new VisionRunner.Listener<PegDetectionPipeline>(this.gearPipeline);
+		this.shooterListener = (BoilerLedPipeline p) -> {
+			imgLock.wait();
+			this.rgbFilteredImage = p.rgbThresholdOutput();
+			this.filteredContours = p.filterContoursOutput();
+			imgLock.notify();
+		};
+		
+		
+		this.gearListener = (PegDetectionPipeline p) -> {
+			imgLock.wait(); // TODO: Catch InterruptedEx
+			this.rgbFilteredImage = p.rgbThresholdOutput();
+			this.filteredContours = p.filterContoursOutput();
+			imgLock.notify();
+		};
 
-		this.shooterThread = new VisionThread(
-							new VisionRunner<BoilerLedPipeline>(
-								this.shooterSource,
-								this.shooterPipeline,
-								this.shooterListener
-							)
-		);
+		this.shooterThread = new VisionThread(this.shooterRunner);
 
-		this.gearThread = new VisionThread(
-							new VisionRunner<PegDetectionPipeline>(
-								this.gearSource,
-								this.gearPipeline,
-								this.gearListener
-							)
-		);
+		this.gearThread = new VisionThread(this.gearRunner);
 
-		this.shooterThread.runForever();
-		this.gearThread.runForever();
+		// if you run this, it'll block forever. need to figure out how to make that
+		// not happen
+		this.shooterRunner.runForever();
+		this.gearRunner.runForever();
 	}
-
+	
+	
 }
