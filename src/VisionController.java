@@ -30,6 +30,10 @@ public class VisionController {
 	 *      - If net bandwidth permits!
 	 */
 
+	private CameraSpec camInfo;
+	
+	private VisionMode mode;
+	
 	private VideoSource shooterSource;
 
 	private VideoSource gearSource;
@@ -44,7 +48,7 @@ public class VisionController {
 			this.shooterListener
 	);
 	
-	private VisionRunner gearRunner = new VisionRunner<PegDetectionPipeline>(
+	private VisionRunner<PegDetectionPipeline> gearRunner = new VisionRunner<PegDetectionPipeline>(
 			this.gearSource,
 			(PegDetectionPipeline) this.gearPipeline,
 			this.gearListener
@@ -72,17 +76,24 @@ source = new VideoCamera(0);
 source.setResolution(1280, 720);
 
 */
-	public VisionController(VideoSource shooterSource, VideoSource gearSource,
+	public VisionController(VideoSource shooterSource, VideoSource gearSource, CameraSpec camInfo,
 							VisionPipeline shooterPipeline, VisionPipeline gearPipeline)
 	{
 		this.shooterSource = shooterSource;
 		this.gearSource = gearSource;
 
+		this.camInfo = camInfo;
+		
 		this.shooterPipeline = shooterPipeline;
 		this.gearPipeline = gearPipeline;
 
 		this.shooterListener = (BoilerLedPipeline p) -> {
-			imgLock.wait();
+			try {
+				imgLock.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			this.rgbFilteredImage = p.rgbThresholdOutput();
 			this.filteredContours = p.filterContoursOutput();
 			imgLock.notify();
@@ -90,21 +101,49 @@ source.setResolution(1280, 720);
 		
 		
 		this.gearListener = (PegDetectionPipeline p) -> {
-			imgLock.wait(); // TODO: Catch InterruptedEx
+			try {
+				imgLock.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // TODO: Catch InterruptedEx
 			this.rgbFilteredImage = p.rgbThresholdOutput();
 			this.filteredContours = p.filterContoursOutput();
 			imgLock.notify();
 		};
 
+		// start the pipeline threads
+		// note: this automatically invokes the runForever method on the runner
 		this.shooterThread = new VisionThread(this.shooterRunner);
-
 		this.gearThread = new VisionThread(this.gearRunner);
-
-		// if you run this, it'll block forever. need to figure out how to make that
-		// not happen
-		this.shooterRunner.runForever();
-		this.gearRunner.runForever();
+		
+		this.mode = VisionMode.BOILER_HIGH;
 	}
 	
+	public double getXAngleToTarget() {
+		
+		// multiply our camera's degrees/pixel by (centerX - imageWidth/2)
+		// therefore, a negative angle represents the target being to the left
+		// of the camera/robot and also signals a need to turn left to
+		// align with the target
+		
+		//TODO: Remove
+		return 0;
+	}
+	
+	public double getYAngleToTarget() {
+		
+		// multiply our camera's degrees/pixel by (centerY - imageHeight/2)
+		// and add it to tiltAngle
+		
+		//TODO: Remove
+		return 0;
+	}
+	
+	public double getDistanceToTarget() {
+		
+		//TODO: Remove
+		return 0;
+	}
 	
 }
