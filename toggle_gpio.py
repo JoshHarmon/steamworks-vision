@@ -16,12 +16,12 @@ GPIO.setmode(GPIO.BOARD)# Configure the pin counting system to board-style
 GPIO.setup(led_pin,GPIO.OUT)# Configure the GPIO as an output
 
 for i in range(10):
-        time.sleep(1) #sleep time in seconds
-        led_high = not led_high # Toggle the pin state
-        GPIO.output(led_pin, led_high) # Set the pin to high or low
-
-        if led_high: print "Lights on!" 
-        else: print "Lights off!"
+	time.sleep(1) #sleep time in seconds
+	led_high = not led_high # Toggle the pin state
+	GPIO.output(led_pin, led_high) # Set the pin to high or low
+	
+	if led_high: print "Lights on!" 
+	else: print "Lights off!"
 
 # Unset the GPIO modes and clean up a bit
 GPIO.cleanup(led_pin)
