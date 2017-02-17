@@ -11,13 +11,20 @@ class GripPipeline:
     def __init__(self):
         """initializes all values to presets or None if need to be set
         """
+        
+        self.__rgb_threshold_red = [40.0, 255.0]
+        self.__rgb_threshold_green = [40.0, 255.0]
+        self.__rgb_threshold_blue = [40.0, 255.0]
+        
 
-        self.__rgb_threshold_red = [62.71468553632102, 202.79564039769883]
-        self.__rgb_threshold_green = [206.15557553956833, 255.0]
-        self.__rgb_threshold_blue = [176.4755766047806, 253.92219129204693]
-
+        """
+        self.__rgb_threshold_red = [60.71468553632102, 140.9287461997466]
+        self.__rgb_threshold_green = [175.15557553956833, 255.0]
+        self.__rgb_threshold_blue = [150.57989315154316, 255.92219129204693]
+        """
+        
         self.rgb_threshold_output = None
-
+        
         self.__cv_dilate_src = self.rgb_threshold_output
         self.__cv_dilate_kernel = None
         self.__cv_dilate_anchor = (-1, -1)
@@ -33,18 +40,16 @@ class GripPipeline:
         self.find_contours_output = None
 
         self.__filter_contours_contours = self.find_contours_output
-        self.__filter_contours_min_area = 100.0
+        self.__filter_contours_min_area = 250.0
         self.__filter_contours_min_perimeter = 0.0
         self.__filter_contours_min_width = 0.0
         self.__filter_contours_max_width = 1000.0
-        self.__filter_contours_min_height = 0.0
+        self.__filter_contours_min_height = 10.0
         self.__filter_contours_max_height = 1000.0
-        self.__filter_contours_solidity = [0.0, 100.0]
+        self.__filter_contours_solidity = [50.44604316546763, 100.0]
         self.__filter_contours_max_vertices = 1000000.0
         self.__filter_contours_min_vertices = 0.0
-
         self.__filter_contours_min_ratio = 0.0
-        
         self.__filter_contours_max_ratio = 1000.0
 
         self.filter_contours_output = None
@@ -138,7 +143,7 @@ class GripPipeline:
         Returns:
             Contours as a list of numpy.ndarray.
         """
-        output = []        
+        output = []
         for contour in input_contours:
             x,y,w,h = cv2.boundingRect(contour)
             if (w < min_width or w > max_width):
