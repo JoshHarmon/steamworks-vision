@@ -42,23 +42,49 @@ import time
 import sys
 import math
 
-cam = cv2.VideoCapture(0)
+while True:
+	try:
+		cam = cv2.VideoCapture(0)
+		break
+	except:
+		pass
+
+while True:
+        NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+
+        if NetworkTables.isConnected():
+                table = NetworkTables.getTable("vision")
+                enabled = table.getKey("enabled")
+        else:
+                continue
+
+
 grip = GripPipeline()
 
+enabled = False
 
-def main():
-	frame_ctr = 0
-	bad_data = False
+frame_ctr = 0
+bad_data = False
+strobe = False
+#text_file = open("Started.txt", "w")
+os.system("touch /home/pi/it-started.txt")
+#def main():	
+while True:
+	#NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 
-	#text_file = open("Output.txt", "w")
-	
-	NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+	#if NetworkTables.isConnected():
+		table = NetworkTables.getTable("vision")
+		enabled = table.getKey("enabled")
 
-	if NetworkTables.isConnected():
-		table = NetworkTables.getTable("contourData")
-	
 	while True:
+		frame_ctr
 		frame_ctr += 1
+		
+		enabled = table.getKey("enabled")
+
+		if not enabled:
+			continue
+		
 		ret_val, img = get_diff(mirror=False)
 		contours = False
 
@@ -138,9 +164,11 @@ def main():
 				dist_cy = cdata[2]
 				
 				print(get_distance_to_boiler(dist_cy))
+
+				angle_offset = get_horizontal_angle_offset(cdata[1])
 				      
 				if NetworkTables.isConnected():
-					table.putNumberArray("coordinates", dArr[0][1:]) ## cx and cy pushed to NT
+					table.putNumberArray("coordinates", cdata[1:]) ## cx and cy pushed to NT
 					table.putNumber("angle", angle_offset) #
 					table.putNumber("frame", frame_ctr)
 				else:
@@ -172,6 +200,14 @@ if split, targets_vertically_stacked for one of the physical targets ( two conto
 
 '''
 
+def enable_light():
+	GPIO.output(led_pin, True)
+	lightStatus = True
+
+def disable_light():
+	GPIO.output(led_pin, False)
+	lightStatus = False
+
 def get_diff(mirror=False):
 	#GPIO.output(led_pin, True)
 	#time.sleep(.05)
@@ -180,7 +216,6 @@ def get_diff(mirror=False):
 	lightsoff_ret, lightsoff_img = cam.read()
 	GPIO.output(led_pin, True)
 	#time.sleep(.05)
-
 
 	if not lightson_ret or not lightsoff_ret: 
 		print("Invalid image!")
@@ -236,7 +271,7 @@ def get_distance_to_boiler(target_cy):
 	total_angle_rad = total_angle * (math.pi / 180.0)
 
 	distance = target_height / math.tan(total_angle_rad)
-	print("Distance ",distance)
+	print("Distance ", distance)
 
 	return distance
 def get_distance_to_boiler_from_regression(cy):
