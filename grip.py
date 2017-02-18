@@ -12,9 +12,9 @@ class GripPipeline:
         """initializes all values to presets or None if need to be set
         """
         
-        self.__rgb_threshold_red = [40.0, 255.0]
-        self.__rgb_threshold_green = [40.0, 255.0]
-        self.__rgb_threshold_blue = [40.0, 255.0]
+        self.__rgb_threshold_red = [20.0, 255.0]
+        self.__rgb_threshold_green = [20.0, 255.0]
+        self.__rgb_threshold_blue = [20.0, 255.0]
         
 
         """
