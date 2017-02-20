@@ -7,6 +7,10 @@ import numpy as np
 from grip import GripPipeline
 
 import os
+
+os.system("touch /home/pi/it-started.txt")
+
+
 try:
 	import RPi.GPIO as GPIO
 except RuntimeError:
@@ -42,45 +46,55 @@ import time
 import sys
 import math
 
+enabled = True
+
 while True:
 	try:
 		cam = cv2.VideoCapture(0)
+		print("Camera operational!")
 		break
 	except:
 		pass
+try:
+        NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+        print("Connected to 2811!")
+except:
+        NetworkTables.initialize(server='roboRIO-2812-FRC.local')
+        print("Connected to 2812!")
 
 while True:
-        NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 
         if NetworkTables.isConnected():
                 table = NetworkTables.getTable("vision")
-                enabled = table.getKey("enabled")
+                #enabled = table.getKey("enabled")
+                enabled = table.getBoolean("enabled",False)
+                print("Network table located!")
+                break
         else:
-                continue
+                print("Network table not detected..!")
+                NetworkTables.createTable("vision")
 
+                time.sleep(1)
+                pass
 
 grip = GripPipeline()
-
-enabled = False
 
 frame_ctr = 0
 bad_data = False
 strobe = False
 #text_file = open("Started.txt", "w")
-os.system("touch /home/pi/it-started.txt")
 #def main():	
 while True:
 	#NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 
 	#if NetworkTables.isConnected():
-		table = NetworkTables.getTable("vision")
-		enabled = table.getKey("enabled")
+	#	table = NetworkTables.getTable("vision")
+	#	enabled = table.getKey("enabled")
 
 	while True:
-		frame_ctr
 		frame_ctr += 1
 		
-		enabled = table.getKey("enabled")
+		enabled = table.getBoolean("enabled", False)
 
 		if not enabled:
 			continue
