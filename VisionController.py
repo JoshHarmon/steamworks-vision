@@ -7,220 +7,17 @@ import numpy as np
 from grip import GripPipeline
 
 import os
-
-os.system("touch /home/pi/it-started.txt")
-
-
-try:
-	import RPi.GPIO as GPIO
-except RuntimeError:
-	print("Error importing RPi.GPIO!  Probably need to run as root")
-
-DIFF_ERR = 1
-
-led_pin=40
-led_high = True
-GPIO.setmode(GPIO.BOARD)# Configure the pin counting system to board-style
-						# In this mode it's the pin of the IDC cable
-#GPIO.setmode(GPIO.BCM) # Configure the pin counting to internal IO number
-GPIO.setup(led_pin,GPIO.OUT)# Configure the GPIO as an output
-GPIO.output(led_pin, True)
-
-#NOTE: It's probably unwise to toggle GPIO immediately
-# before the image capture. The GPIO may have a turn on time, 
-# resulting in incorrect data unless we provide a few
-# milliseconds to allow the IO to do it's thing. 
-# The best approach is to set the pin mode for the next capture
-# immediately after the first one
-
-# Set up the camera properties to avoid stupid problems
-os.system("v4l2-ctl -c backlight_compensation=0")
-# Your tweaks here
-# os.system("v4l2-ctl -c ")
-
-
 from networktables import NetworkTables
 import logging
 
 import time
 import sys
 import math
-
-enabled = True
-
-while True:
-	try:
-		cam = cv2.VideoCapture(0)
-		print("Camera operational!")
-		break
-	except:
-		pass
-try:
-        NetworkTables.initialize(server='roboRIO-2811-FRC.local')
-        print("Connected to 2811!")
-except:
-        NetworkTables.initialize(server='roboRIO-2812-FRC.local')
-        print("Connected to 2812!")
-
-while True:
-
-        if NetworkTables.isConnected():
-                table = NetworkTables.getTable("vision")
-                #enabled = table.getKey("enabled")
-                enabled = table.getBoolean("enabled",False)
-                print("Network table located!")
-                break
-        else:
-                print("Network table not detected..!")
-                NetworkTables.createTable("vision")
-
-                time.sleep(1)
-                pass
-
 grip = GripPipeline()
 
-frame_ctr = 0
-bad_data = False
-strobe = False
-#text_file = open("Started.txt", "w")
-#def main():	
-while True:
-	#NetworkTables.initialize(server='roboRIO-2811-FRC.local')
-
-	#if NetworkTables.isConnected():
-	#	table = NetworkTables.getTable("vision")
-	#	enabled = table.getKey("enabled")
-
-	while True:
-		frame_ctr += 1
-		
-		enabled = table.getBoolean("enabled", False)
-
-		if not enabled:
-			continue
-		
-		ret_val, img = get_diff(mirror=False)
-		contours = False
-
-		if not (ret_val == -DIFF_ERR):		
-			grip.process(img)
-			bad_data = False
-
-			contours = grip.filter_contours_output
-
-			img2 = cv2.drawContours(img, contours, -1, (0,255,0), 3)
-			cv2.imshow('diff w/ contours', img2)
-			if cv2.waitKey(1) == 27:
-				break # esc to quit
-						
-			#print('# contours:', len(contours))
-
-			dArr = []
-
-			for i in range(len(contours)):
-				moments1 = cv2.moments(contours[i])
-
-				cx = int(moments1['m10']/moments1['m00'])
-				cy = int(moments1['m01']/moments1['m00'])
-
-				area = cv2.contourArea(contours[i])
-
-				dArr.append([i, cx, cy, area])
-				
-				#text_file.write("%d %d %d %d %d\n" % (i, cx, cy, area, count))
-
-			dArr.sort(key=lambda x: x[3], reverse=True)
-			
-			## Traits: Group Height, dTop, LEdge, Width ratio, Height ratio
-
-			traitAnalysisArr = []
-			
-			for i in range(len(dArr) - 1): ## range stops before the length, so this stays in bounds
-				for j in range(i + 1, len(dArr)):
-					## The non-2 values should represent the top target (as we sort dArr by area and the top target is bigger)
-					## The -2 values, logically, represent the bottom target rect values
-					##print('getting rect i for idx', dArr[i][0], 'of contours list with max idx of', (len(contours) - 1))
-					x,y,w,h = cv2.boundingRect(contours[dArr[i][0]])  ## dArr[i][0] represents the true i-value of the contour
-					##print('getting rect j for idx', dArr[j][0], 'of contours list with max idx of', (len(contours) - 1))
-					x2,y2,w2,h2 = cv2.boundingRect(contours[dArr[j][0]])
-
-					## See how well the left edges of the targets line up
-					lEdgeTestValue = abs((((x - x2) / w) + 1))
-
-					## Note that these ratios are not safe until we've
-					## iterated based on greatest-least area... this may
-					## involve getting i from (sorted) dArr and fetching that i from
-					## the contours list
-					widthCompareTestValue = abs((w / w2)) ## Widths should be about the same
-					heightCompareTestValue = abs((h / (2*h2))) ## Top should be about twice as tall as bottom
-
-					areaCompareValue = abs(((w * h) / (w2 * h2)) - 2) ## .5 or (2) (need to force one later)
-
-					totalTestScore = lEdgeTestValue + widthCompareTestValue + heightCompareTestValue + areaCompareValue
-
-					traitAnalysisArr.append([i, j, totalTestScore])
-			
-			## end traits loop
-
-			bestIdx = 0
-			bestScore = sys.maxsize # Remember: the scores are like golf; lower is better.
-
-			if (len(traitAnalysisArr) > 0): # Do we have any contour pairs?
-				for i in range(len(traitAnalysisArr)):
-					if (traitAnalysisArr[i][2] < bestScore):
-						bestIdx = i
-						bestScore = traitAnalysisArr[i][2]
-				
-				print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
-				print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
-				cdata = dArr[traitAnalysisArr[i][0]]
-
-				dist_cy = cdata[2]
-				
-				print(get_distance_to_boiler(dist_cy))
-
-				angle_offset = get_horizontal_angle_offset(cdata[1])
-				      
-				if NetworkTables.isConnected():
-					table.putNumberArray("coordinates", cdata[1:]) ## cx and cy pushed to NT
-					table.putNumber("angle", angle_offset) #
-					table.putNumber("frame", frame_ctr)
-				else:
-					print('NT not connected...')
-			else: # No contour pairs
-				#print('Analysis failed...')
-				pass
-		else: # GRIP pipeline failed. Most likely from the camera not being connected.
-			print('Pipeline returned an error... Is the camera connected?')
-			bad_data = True
-	#text_file.close()
-	cv2.destroyAllWindows()
-	GPIO.output(led_pin, False)
-
-'''
-Conditions for boiler targeting
-len(contours) >= 2
-two targets_vertically_stacked
-
-
-'''
-
-'''
-Conditions for gear peg targeting
-len(contours) >= 2    (3 if one is split by the peg)
-
-if split, targets_vertically_stacked for one of the physical targets ( two contours )
-
-
-'''
-
-def enable_light():
-	GPIO.output(led_pin, True)
-	lightStatus = True
-
-def disable_light():
-	GPIO.output(led_pin, False)
-	lightStatus = False
+##
+## Meaty vision functions!
+##
 
 def get_diff(mirror=False):
 	#GPIO.output(led_pin, True)
@@ -237,15 +34,110 @@ def get_diff(mirror=False):
 		# of an appropriate size 
 		# (or a really small image that just process as nothing instantly)
 		# Alternatively, we can return a tuple with (validity,image)
-		height=1
-		width=1
-		return (-DIFF_ERR, (numpy.zeros((height,width,3), numpy.uint8)))
+		height=480
+		width=640
+		return (False, (numpy.zeros((height,width,3), numpy.uint8)))
 
 	diff_img = cv2.subtract(lightson_img, lightsoff_img)
 
 	if mirror: 
 		diff_img = cv2.flip(diff_img, 1)
-	return (0, diff_img)
+	return (True, diff_img)
+
+def get_target_xy(img):
+	print "processing... processing... PROCESSING.
+
+	grip.process(img)
+	contours = grip.filter_contours_output
+
+	img2 = cv2.drawContours(img, contours, -1, (0,255,0), 3)
+
+	if drawmode==DRAW_CONTOURS:
+		cv2.imshow('diff w/ contours', img2)
+
+	#print('# contours:', len(contours))
+
+	dArr = []
+
+	for i in range(len(contours)):
+		moments1 = cv2.moments(contours[i])
+
+		cx = int(moments1['m10']/moments1['m00'])
+		cy = int(moments1['m01']/moments1['m00'])
+
+		area = cv2.contourArea(contours[i])
+
+		dArr.append([i, cx, cy, area])
+		
+		#text_file.write("%d %d %d %d %d\n" % (i, cx, cy, area, count))
+
+	dArr.sort(key=lambda x: x[3], reverse=True)
+	
+	## Traits: Group Height, dTop, LEdge, Width ratio, Height ratio
+
+	traitAnalysisArr = []
+	
+	for i in range(len(dArr) - 1): ## range stops before the length, so this stays in bounds
+		for j in range(i + 1, len(dArr)):
+			## The non-2 values should represent the top target (as we sort dArr by area and the top target is bigger)
+			## The -2 values, logically, represent the bottom target rect values
+			##print('getting rect i for idx', dArr[i][0], 'of contours list with max idx of', (len(contours) - 1))
+			x,y,w,h = cv2.boundingRect(contours[dArr[i][0]])  ## dArr[i][0] represents the true i-value of the contour
+			##print('getting rect j for idx', dArr[j][0], 'of contours list with max idx of', (len(contours) - 1))
+			x2,y2,w2,h2 = cv2.boundingRect(contours[dArr[j][0]])
+
+			## See how well the left edges of the targets line up
+			lEdgeTestValue = abs((((x - x2) / w) + 1))
+
+			## Note that these ratios are not safe until we've
+			## iterated based on greatest-least area... this may
+			## involve getting i from (sorted) dArr and fetching that i from
+			## the contours list
+			widthCompareTestValue = abs((w / w2)) ## Widths should be about the same
+			heightCompareTestValue = abs((h / (2*h2))) ## Top should be about twice as tall as bottom
+
+			areaCompareValue = abs(((w * h) / (w2 * h2)) - 2) ## .5 or (2) (need to force one later)
+
+			totalTestScore = lEdgeTestValue + widthCompareTestValue + heightCompareTestValue + areaCompareValue
+
+			traitAnalysisArr.append([i, j, totalTestScore])
+	
+	## end traits loop
+
+	bestIdx = 0
+	bestScore = sys.maxsize # Remember: the scores are like golf; lower is better.
+
+	if (len(traitAnalysisArr) > 0): # Do we have any contour pairs?
+		for i in range(len(traitAnalysisArr)):
+			if (traitAnalysisArr[i][2] < bestScore):
+				bestIdx = i
+				bestScore = traitAnalysisArr[i][2]
+		
+		#TODO: How is [i] even defined here? It appears to simply be the last value set from
+		# the for loop above, which should equal the last item in traitAnalysisArr
+		# this working at all seems like a python scope bug, and probably not what you intended
+		# 
+		# I tested this, and the following code confirms that this is possible
+		#   for i in range(5):
+        #	  print i
+		#   print i
+		#   print i
+		# which prints 1,2,3,4,4,4
+		# 
+		# I think you forgot the sort function to sort by best score, eg
+		# traitAnalysisArr.sort(key=lambda x: x[2], reverse=True)
+
+
+		# print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
+		# print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
+		cdata = dArr[traitAnalysisArr[i][0]]
+
+		dist_cy = cdata[2]
+		dist_cx = cdata[1]
+		
+		return true,dist_cx,dist_cy
+	else:
+		return False,0,0
 
 def get_distance_to_boiler(target_cy):
 
@@ -288,36 +180,173 @@ def get_distance_to_boiler(target_cy):
 	print("Distance ", distance)
 
 	return distance
-def get_distance_to_boiler_from_regression(cy):
-	return 0
 
 def get_horizontal_angle_offset(target_cx):
 	## TODO: Optimize to get cx as arg or get dArr value
-
 	degrees_per_px = 1 / 12.30355
-
 	angle_offset = degrees_per_px * (target_cx - 320)
-
 	return angle_offset
 
-	
-def targets_horizontally_stacked(contour1, contour2):
-	moments1 = cv2.moments(contour1)
-	moments2 = cv2.moments(contour2)
 
-	cy1 = int(moments1['m01']/moments1['m00'])
-	cy2 = int(moments2['m01']/moments2['m00'])
+##
+## GENERAL SETUP SUB ROUTINES
+## 
+def set_os_camera_parameters:
+	# Set up the camera properties to avoid stupid problems
+	os.system("v4l2-ctl -c backlight_compensation=0")
+	# Your tweaks here
+	# os.system("v4l2-ctl -c ")
 
-	return abs(cy1 - cy2) < 12
+def LED_initialize(led):
+	led_high = True
+	GPIO.setmode(GPIO.BOARD)# Configure the pin counting system to board-style
+							# In this mode it's the pin of the IDC cable
+	#GPIO.setmode(GPIO.BCM) # Configure the pin counting to internal IO number
+	GPIO.setup(led,GPIO.OUT)# Configure the GPIO as an output
+	GPIO.output(led, True)
 
-def targets_vertically_stacked(contour1, contour2):
-	moments1 = cv2.moments(contour1)
-	moments2 = cv2.moments(contour2)
+## 
+## NETWORK TABLES HELPER FUNCTIONS WITH WRAPPED TRY/EXCEPTS 
+## 
 
-	cx1 = int(moments1['m10']/moments1['m00'])
-	cx2 = int(moments2['m10']/moments2['m00'])
+def NT_initialize(teamnumber):
+	try:
+		NetworkTables.initialize(server="roboRIO-%d-FRC.local"%teamnumber)
+		print("Connected to %s!" %)
+		return True
+	except:
+		return False
+	else:
+		return False
 
-	return abs(cx1 - cx2) < 12
+def NT_getTable(table="vision")
+	if NetworkTables.isConnected():
+		table = NetworkTables.getTable("vision")
+		print("Network table located!")
+		return table
+	else:
+		return null
+
+def NT_putBoolean(key,value):
+	try: return table.putBoolean(key,value)
+	except: return default
+
+def NT_putNumber(key,value):
+	try: return table.putNumber(key,value)
+	except:pass
+
+def NT_putNumberArray(key,value):
+	try: table.putNumberArray(key,value)
+	except:pass
+
+def NT_putString(key,value):
+	try: table.putString(key,value)
+	except:pass
+
+def NT_getBoolean(key,default):
+	try: return table.getBoolean(key,default)
+	except: return default
+
+def NT_getNumber(key,default):
+	try: return table.getNumber(key,default)
+	except: return default
+
+def NT_delete(key):
+	try: return table.delete(key)
+	except: return default
+
+
+global led_pin = 40
+global networkTableConnected = False
+global cam = null
+global frame_count = 0
+global DEBUG = False
+
+global drawmode = 0
+global DRAW_DISABLED = 0
+global DRAW_DIFF = 1
 
 if __name__ == '__main__':
-	main()
+	LED_initialize(led_pin):
+	networkTableConnected = False
+
+	# Check for debug flag
+	if "--debug" in sys.argv or "-d" in sys.argv
+			print("Debug mode activated!")
+			DEBUG=True
+			drawmode=DRAW_DIFF
+
+	# Attempt to connect to a camera
+	while cam==null:
+		try:
+			cam = cv2.VideoCapture(0)
+			NT_delete("camera_error")
+			print("Camera operational!")
+		except:
+			NT_putString("camera_error","Unable to connect the camera!")
+			sleep(1)
+	
+	# Main Loop
+	while(1):
+		# Attempt connection to NetworkTables
+		if False==networkTableConnected:
+			# Failure mode: Continue anyway (probably dev mode)
+			NT_initialize
+
+
+		# Check if robot is enabled
+		if not robotEnabled() and not DEBUG:
+			print("Robot disabled!")
+			continue
+
+		# Shove all image processing subroutine calls here
+		try:
+			# Get diff image
+			valid, img = get_diff()
+
+			# Draw the diff if that's what you're into
+			if valid and drawmode==DRAW_DIFF:
+				try:cv2.imshow('diff', img)
+				except:pass
+
+			# TODO: This probably needs it's own refactor. Suggestion:
+			valid,x_pos,y_pos = get_target_xy(img)
+			# TODO: The type of loops you do in this are
+			# much more sane if you do the element iterator like this
+			# 
+			# for namedPerson in ["Bob","Alice","Doug"]
+			#     print("I'm an person named "+namedPerson
+			#     
+			# which lets you avoid having to manage indices
+
+
+
+			if not valid:continue
+			distance = get_distance_to_boiler(y_pos)
+			angle=get_horizontal_angle_offset(x_pos)
+			  
+		except Exception as error:
+			print("Ran into an error!")
+			print(error)
+			continue
+		
+		# Increment our frame counter
+		frame_counter+=1
+
+		# Do cool stuff with valid data
+		if valid
+			# Post data to NWTables
+			# update frame_count
+			NT_putNumber("angle", angle_offset)
+			NT_putNumber("distance", distance)
+			NT_putNumber("frame", frame_count)
+		if valid and DEBUG:
+			print(strftime("%H:%M:%S", gmtime()))
+			print("Successfully processed frame %s" % distance)
+			print("time:",datetime.utcnow().strftime('%H:%M":%S.%f'))
+			print("Horizontal angle :%02.4f degrees" % frame_counter)
+			print("Distance         :%02.4f feet " % distance)
+
+	# Post cleanup!
+	cv2.destroyAllWindows()
+	GPIO.output(led_pin, False)
