@@ -13,7 +13,12 @@ import logging
 import time
 import sys
 import math
-grip = GripPipeline()
+import datetime
+import traceback
+
+# tested using pip package Adafruit-GPIO
+# sudo pip install Adafruit-GPIO
+import RPi.GPIO as GPIO
 
 ##
 ## Meaty vision functions!
@@ -45,7 +50,7 @@ def get_diff(mirror=False):
 	return (True, diff_img)
 
 def get_target_xy(img):
-	print "processing... processing... PROCESSING.
+	# print("processing... processing... PROCESSING.")
 
 	grip.process(img)
 	contours = grip.filter_contours_output
@@ -135,7 +140,7 @@ def get_target_xy(img):
 		dist_cy = cdata[2]
 		dist_cx = cdata[1]
 		
-		return true,dist_cx,dist_cy
+		return True,dist_cx,dist_cy
 	else:
 		return False,0,0
 
@@ -191,7 +196,7 @@ def get_horizontal_angle_offset(target_cx):
 ##
 ## GENERAL SETUP SUB ROUTINES
 ## 
-def set_os_camera_parameters:
+def set_os_camera_parameters():
 	# Set up the camera properties to avoid stupid problems
 	os.system("v4l2-ctl -c backlight_compensation=0")
 	# Your tweaks here
@@ -212,20 +217,21 @@ def LED_initialize(led):
 def NT_initialize(teamnumber):
 	try:
 		NetworkTables.initialize(server="roboRIO-%d-FRC.local"%teamnumber)
-		print("Connected to %s!" %)
+		print("Connected to %s!" %teamnumber)
+		NT_getTable
 		return True
 	except:
 		return False
 	else:
 		return False
 
-def NT_getTable(table="vision")
+def NT_getTable(table="vision"):
 	if NetworkTables.isConnected():
 		table = NetworkTables.getTable("vision")
 		print("Network table located!")
 		return table
 	else:
-		return null
+		return None
 
 def NT_putBoolean(key,value):
 	try: return table.putBoolean(key,value)
@@ -246,6 +252,7 @@ def NT_putString(key,value):
 def NT_getBoolean(key,default):
 	try: return table.getBoolean(key,default)
 	except: return default
+	# TODO: Maybe make this invalidate our table/networkTable connection?
 
 def NT_getNumber(key,default):
 	try: return table.getNumber(key,default)
@@ -256,48 +263,63 @@ def NT_delete(key):
 	except: return default
 
 
-global led_pin = 40
-global networkTableConnected = False
-global cam = null
-global frame_count = 0
-global DEBUG = False
+led_pin = 40
+networkTableConnected = False
+table = None
+cam = None
+frame_count = 0
+DEBUG = False
 
-global drawmode = 0
-global DRAW_DISABLED = 0
-global DRAW_DIFF = 1
+drawmode = 0
+DRAW_DISABLED = 0
+DRAW_DIFF = 1
+DRAW_CONTOURS = 1
+grip = GripPipeline()
 
 if __name__ == '__main__':
-	LED_initialize(led_pin):
+	LED_initialize(led_pin)
 	networkTableConnected = False
 
 	# Check for debug flag
-	if "--debug" in sys.argv or "-d" in sys.argv
+	if "--debug" in sys.argv or "-d" in sys.argv:
 			print("Debug mode activated!")
 			DEBUG=True
 			drawmode=DRAW_DIFF
 
 	# Attempt to connect to a camera
-	while cam==null:
+	while cam==None:
 		try:
 			cam = cv2.VideoCapture(0)
 			NT_delete("camera_error")
 			print("Camera operational!")
 		except:
 			NT_putString("camera_error","Unable to connect the camera!")
-			sleep(1)
+			time.sleep(1)
 	
 	# Main Loop
 	while(1):
 		# Attempt connection to NetworkTables
 		if False==networkTableConnected:
 			# Failure mode: Continue anyway (probably dev mode)
-			NT_initialize
-
-
+			NT_initialize("2811") or NT_initialize("2812")
+		if None == table:
+			NT_getTable
+		# TODO periodically check and invalidate NetworkTables + Table if
+		# The connection gets dropped
+		# This should also set the enabled flag to false
+		# One option is if (frame_counter % 20==0) or something
+		# Another reasonable spot is in except block of getBoolean, 
+		# Which should only happen if we lose our table.
+		
+	
 		# Check if robot is enabled
-		if not robotEnabled() and not DEBUG:
-			print("Robot disabled!")
+		if not NT_getBoolean("enabled",False) and not DEBUG:
+			print("Robot not enabled!")
+			time.sleep(0.05)
 			continue
+
+		#update our frame count
+		frame_count+=1
 
 		# Shove all image processing subroutine calls here
 		try:
@@ -319,8 +341,6 @@ if __name__ == '__main__':
 			#     
 			# which lets you avoid having to manage indices
 
-
-
 			if not valid:continue
 			distance = get_distance_to_boiler(y_pos)
 			angle=get_horizontal_angle_offset(x_pos)
@@ -328,25 +348,31 @@ if __name__ == '__main__':
 		except Exception as error:
 			print("Ran into an error!")
 			print(error)
+			print(traceback.format_exc())
+
+			#raise(error) #comment this line to continue running despite errors
 			continue
 		
-		# Increment our frame counter
-		frame_counter+=1
-
 		# Do cool stuff with valid data
-		if valid
+		if valid:
 			# Post data to NWTables
 			# update frame_count
-			NT_putNumber("angle", angle_offset)
+			NT_putNumber("angle", angle)
 			NT_putNumber("distance", distance)
 			NT_putNumber("frame", frame_count)
+			
 		if valid and DEBUG:
-			print(strftime("%H:%M:%S", gmtime()))
-			print("Successfully processed frame %s" % distance)
-			print("time:",datetime.utcnow().strftime('%H:%M":%S.%f'))
-			print("Horizontal angle :%02.4f degrees" % frame_counter)
+			print("Successfully processed frame %s" % frame_count)
+			print("time:",time.strftime("%a, %d %b %Y %H:%M:%S.%f", time.gmtime()))
+			print("Horizontal angle :%02.4f degrees" % angle)
 			print("Distance         :%02.4f feet " % distance)
-
+			print("======")
+			
+		# Sleep a bit. This should help with some of the overheating issues,
+		# as well as power draw.
+		# TODO: investigate if this is required and/or causes problems
+		time.sleep(0.1)
+		
 	# Post cleanup!
 	cv2.destroyAllWindows()
 	GPIO.output(led_pin, False)
