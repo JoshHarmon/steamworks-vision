@@ -29,10 +29,10 @@ def get_diff(mirror=False):
 	#time.sleep(.05)
 	lightson_ret, lightson_img = cam.read()
 	GPIO.output(led_pin, False)
+	#time.sleep(.05)
 	lightsoff_ret, lightsoff_img = cam.read()
 	GPIO.output(led_pin, True)
-	#time.sleep(.05)
-
+	
 	if not lightson_ret or not lightsoff_ret: 
 		print("Invalid image!")
 		# This should probably just return a black image 
@@ -41,7 +41,7 @@ def get_diff(mirror=False):
 		# Alternatively, we can return a tuple with (validity,image)
 		height=480
 		width=640
-		return (False, (numpy.zeros((height,width,3), numpy.uint8)))
+		return (False, (np.zeros((height,width,3), np.uint8)))
 
 	diff_img = cv2.subtract(lightson_img, lightsoff_img)
 
@@ -59,6 +59,9 @@ def get_target_xy(img):
 
 	if drawmode==DRAW_CONTOURS:
 		cv2.imshow('diff w/ contours', img2)
+		if cv2.waitKey(1) == 27: # Esc
+			cv2.destroyAllWindows()
+			
 
 	#print('# contours:', len(contours))
 
@@ -135,7 +138,9 @@ def get_target_xy(img):
 
 		# print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
 		# print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
-		cdata = dArr[traitAnalysisArr[i][0]]
+		
+		# TODO: Check if changing this from i to bestIdx was appropriate
+		cdata = dArr[traitAnalysisArr[bestIdx][0]]
 
 		dist_cy = cdata[2]
 		dist_cx = cdata[1]
@@ -214,20 +219,20 @@ def LED_initialize(led):
 ## NETWORK TABLES HELPER FUNCTIONS WITH WRAPPED TRY/EXCEPTS 
 ## 
 
-def NT_initialize(teamnumber):
+def NT_initialize(address):
 	try:
-		NetworkTables.initialize(server="roboRIO-%d-FRC.local"%teamnumber)
-		print("Connected to %s!" %teamnumber)
-		NT_getTable
+		NetworkTables.initialize(server=address)
+		print("Connected to ", address)
+		NT_getTable()
 		return True
 	except:
 		return False
 	else:
 		return False
 
-def NT_getTable(table="vision"):
+def NT_getTable(tableName="vision"):
 	if NetworkTables.isConnected():
-		table = NetworkTables.getTable("vision")
+		table = NetworkTables.getTable(tableName)
 		print("Network table located!")
 		return table
 	else:
@@ -273,7 +278,7 @@ DEBUG = False
 drawmode = 0
 DRAW_DISABLED = 0
 DRAW_DIFF = 1
-DRAW_CONTOURS = 1
+DRAW_CONTOURS = 2
 grip = GripPipeline()
 
 if __name__ == '__main__':
@@ -284,7 +289,7 @@ if __name__ == '__main__':
 	if "--debug" in sys.argv or "-d" in sys.argv:
 			print("Debug mode activated!")
 			DEBUG=True
-			drawmode=DRAW_DIFF
+			drawmode=DRAW_CONTOURS
 
 	# Attempt to connect to a camera
 	while cam==None:
@@ -301,19 +306,20 @@ if __name__ == '__main__':
 		# Attempt connection to NetworkTables
 		if False==networkTableConnected:
 			# Failure mode: Continue anyway (probably dev mode)
-			NT_initialize("2811") or NT_initialize("2812")
+			#NT_initialize("2811") or NT_initialize("2812")
+			NT_initialize("roboRIO-2811-FRC.frc-robot.local") or  NT_initialize("roboRIO-2811-frc.local") or NT_initialize("10.28.11.2") or NT_initialize("10.28.12.2") or NT_initialize("10.28.11.30")
+			networkTableConnected = True
 		if None == table:
-			NT_getTable
+			NT_getTable()
 		# TODO periodically check and invalidate NetworkTables + Table if
 		# The connection gets dropped
 		# This should also set the enabled flag to false
 		# One option is if (frame_counter % 20==0) or something
 		# Another reasonable spot is in except block of getBoolean, 
 		# Which should only happen if we lose our table.
-		
-	
+
 		# Check if robot is enabled
-		if not NT_getBoolean("enabled",False) and not DEBUG:
+		if not NT_getBoolean("enabled", False) and not DEBUG:
 			print("Robot not enabled!")
 			time.sleep(0.05)
 			continue
@@ -328,11 +334,20 @@ if __name__ == '__main__':
 
 			# Draw the diff if that's what you're into
 			if valid and drawmode==DRAW_DIFF:
-				try:cv2.imshow('diff', img)
+				try:
+					cv2.imshow('diff', img)
+					if cv2.waitKey(1) == 27:
+						cv2.destroyAllWindows()
+						break
 				except:pass
 
 			# TODO: This probably needs it's own refactor. Suggestion:
 			valid,x_pos,y_pos = get_target_xy(img)
+			
+			if cv2.waitKey(1) == 27:
+				cv2.destroyAllWindows()
+				break
+			
 			# TODO: The type of loops you do in this are
 			# much more sane if you do the element iterator like this
 			# 
