@@ -12,7 +12,7 @@ frame = 1
 mirror = False
 
 if __name__ == '__main__':
-	cam = cv2.VideoCapture(1)
+	cam = cv2.VideoCapture(0)
 	while True:
 		ret_val, img = cam.read()
 		if mirror: 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 		if key == 32:
 			#space to save a screenshot
 			name=os.getcwd()+"/frame_%02s.png" % frame
-			print name
+			print(name)
 			cv2.imwrite(name,img)
 			frame+=1
 	cv2.destroyAllWindows()
