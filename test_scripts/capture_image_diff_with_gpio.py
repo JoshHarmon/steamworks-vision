@@ -8,9 +8,9 @@ import time
 import os
 import numpy
 try:
-    import RPi.GPIO as GPIO
+	import RPi.GPIO as GPIO
 except RuntimeError:
-    print("Error importing RPi.GPIO!  Probably need to run as root")
+	print("Error importing RPi.GPIO!  Probably need to run as root")
 
 led_pin=40
 led_high = True
@@ -42,7 +42,7 @@ def get_diff(mirror=False):
 	GPIO.output(led_pin, True)
 
 	if not lightson_ret or not lightsoff_ret: 
-		print "Invalid image!"
+		print("Invalid image!")
 		# This should probably just return a black image 
 		# of an appropriate size 
 		# (or a really small image that just process as nothing instantly)
@@ -51,7 +51,7 @@ def get_diff(mirror=False):
 		width=1
 		return numpy.zeros((height,width,3), numpy.uint8)
 
-        diff_img = cv2.subtract(lightsoff_img,lightson_img)
+	diff_img = cv2.subtract(lightsoff_img,lightson_img)
 	
 	if mirror: 
 		diff_img = cv2.flip(diff_img, 1)
@@ -60,14 +60,14 @@ def get_diff(mirror=False):
 
 if __name__ == '__main__':
 	while True:
-        	diff_img=get_diff(mirror=True)
-		cv2.imshow('my webcam', diff_img)
+		diff=get_diff(mirror=True)
+		cv2.imshow('my webcam', diff)
 		if cv2.waitKey(1) == 27: 
 			break  # esc or enter to quit
+	
 	file_path =  "/tmp/captured_diff.png"
-        print "Saving last diff image to " + file_path
-	cv2.imwrite(file_path,diff_img)
-
-        print "Cleaning up!!"
+	print("Saving last diff image to ", file_path)
+	cv2.imwrite(file_path,diff)
+	print("Cleaning up!!")
 	cv2.destroyAllWindows()
 	GPIO.cleanup(led_pin)
