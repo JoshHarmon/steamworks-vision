@@ -20,6 +20,8 @@ import traceback
 # sudo pip install Adafruit-GPIO
 import RPi.GPIO as GPIO
 
+from concurrent.futures import ThreadPoolExecutor
+
 ##
 ## Meaty vision functions!
 ##
@@ -281,6 +283,36 @@ DRAW_DIFF = 1
 DRAW_CONTOURS = 2
 grip = GripPipeline()
 
+def noop():
+	pass
+
+def image_process_pipeline(img):
+	valid,x_pos,y_pos = get_target_xy(img)
+	if not valid:
+		return (False,0,0,frame_count)
+	distance = get_distance_to_boiler(y_pos)
+	angle=get_horizontal_angle_offset(x_pos)
+
+	# Do cool stuff with valid data
+	if valid:
+		# Post data to NWTables
+		# update frame_count
+		NT_putNumber("angle", angle)
+		NT_putNumber("distance", distance)
+		NT_putNumber("frame", frame_count)
+		
+	if valid and DEBUG:
+		print("Successfully processed frame %s" % frame_count)
+		print("time:",time.strftime("%a, %d %b %Y %H:%M:%S.%f", time.gmtime()))
+		print("Horizontal angle :%02.4f degrees" % angle)
+		print("Distance         :%02.4f feet " % distance)
+		print("======")
+	return (valid, distance, angle,frame_count)
+
+
+process_pool = ThreadPoolExecutor(1)
+process_thread = process_pool.submit(noop)
+
 if __name__ == '__main__':
 	LED_initialize(led_pin)
 	networkTableConnected = False
@@ -299,6 +331,7 @@ if __name__ == '__main__':
 			print("Camera operational!")
 		except:
 			NT_putString("camera_error","Unable to connect the camera!")
+			print("Camera not available!")
 			time.sleep(1)
 	
 	# Main Loop
@@ -341,25 +374,27 @@ if __name__ == '__main__':
 						break
 				except:pass
 
-			# TODO: This probably needs it's own refactor. Suggestion:
-			valid,x_pos,y_pos = get_target_xy(img)
-			
-			if cv2.waitKey(1) == 27:
-				cv2.destroyAllWindows()
-				break
-			
-			# TODO: The type of loops you do in this are
-			# much more sane if you do the element iterator like this
-			# 
-			# for namedPerson in ["Bob","Alice","Doug"]
-			#     print("I'm an person named "+namedPerson
-			#     
-			# which lets you avoid having to manage indices
+			#If our worker thread is idle, break off and start 
+			#processing a new image
+			# TODO: check nice values, run below this priority
+			# TODO: See how many parallel calculations we can run.
+			#	we should be able to stream 2-3 threads across the Pi's cores
+			#	to process things quickly.
+			# TODO: Investigate using callbacks for NetworkTables publishing
+			if process_thread.running():
+				pass
+			elif process_thread.done():
+				# Do something with the current results 
+				print(process_thread.result())
+				
+				#restart the process with the newest image
+				process_thread = process_pool.submit(image_process_pipeline,img)
+			else:
+				process_thread = process_pool.submit(image_process_pipeline,img)
 
-			if not valid:continue
-			distance = get_distance_to_boiler(y_pos)
-			angle=get_horizontal_angle_offset(x_pos)
-			  
+
+			
+			
 		except Exception as error:
 			print("Ran into an error!")
 			print(error)
@@ -367,26 +402,11 @@ if __name__ == '__main__':
 
 			#raise(error) #comment this line to continue running despite errors
 			continue
-		
-		# Do cool stuff with valid data
-		if valid:
-			# Post data to NWTables
-			# update frame_count
-			NT_putNumber("angle", angle)
-			NT_putNumber("distance", distance)
-			NT_putNumber("frame", frame_count)
-			
-		if valid and DEBUG:
-			print("Successfully processed frame %s" % frame_count)
-			print("time:",time.strftime("%a, %d %b %Y %H:%M:%S.%f", time.gmtime()))
-			print("Horizontal angle :%02.4f degrees" % angle)
-			print("Distance         :%02.4f feet " % distance)
-			print("======")
 			
 		# Sleep a bit. This should help with some of the overheating issues,
 		# as well as power draw.
 		# TODO: investigate if this is required and/or causes problems
-		time.sleep(0.1)
+		#time.sleep(0.1)
 		
 	# Post cleanup!
 	cv2.destroyAllWindows()
