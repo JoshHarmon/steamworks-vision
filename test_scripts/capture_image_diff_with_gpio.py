@@ -51,7 +51,7 @@ def get_diff(mirror=False):
 		width=1
 		return numpy.zeros((height,width,3), numpy.uint8)
 
-	diff_img = cv2.subtract(lightsoff_img,lightson_img)
+	diff_img = cv2.subtract(lightson_img,lightsoff_img)
 	
 	if mirror: 
 		diff_img = cv2.flip(diff_img, 1)
@@ -59,11 +59,16 @@ def get_diff(mirror=False):
 	return diff_img
 
 if __name__ == '__main__':
+	frame = 0
 	while True:
 		diff=get_diff(mirror=True)
 		cv2.imshow('my webcam', diff)
 		if cv2.waitKey(1) == 27: 
-			break  # esc or enter to quit
+			file_path =  "/tmp/captured_diff%s.png"% frame
+			print("Saving last diff image to ", file_path)
+			cv2.imwrite(file_path,diff)
+			frame +=1
+			#break  # esc or enter to quit
 	
 	file_path =  "/tmp/captured_diff.png"
 	print("Saving last diff image to ", file_path)
