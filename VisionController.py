@@ -138,8 +138,8 @@ def get_target_xy(img):
 		# traitAnalysisArr.sort(key=lambda x: x[2], reverse=True)
 
 
-		# print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
-		# print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
+		print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
+		print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
 		
 		# TODO: Check if changing this from i to bestIdx was appropriate
 		cdata = dArr[traitAnalysisArr[bestIdx][0]]
@@ -239,6 +239,10 @@ def NT_getTable(tableName="vision"):
 		return table
 	else:
 		return None
+def image_process_pipeline(img,frameid):
+	fname="diff_%03s.jpg" % frameid
+	cv2.imwrite(fname,img)
+	return "Saved frameid "+fname
 
 def NT_putBoolean(key,value):
 	try: return table.putBoolean(key,value)
@@ -271,10 +275,11 @@ def NT_delete(key):
 
 
 led_pin = 40
-networkTableConnected = False
 table = None
 cam = None
 frame_count = 0
+enabled = False
+
 DEBUG = False
 
 drawmode = 0
@@ -297,9 +302,12 @@ def image_process_pipeline(img):
 	if valid:
 		# Post data to NWTables
 		# update frame_count
-		NT_putNumber("angle", angle)
-		NT_putNumber("distance", distance)
-		NT_putNumber("frame", frame_count)
+		try:
+			table.putNumber("angle", angle)
+			table.putNumber("distance", distance)
+			table.putNumber("frame", frame_count)
+		except KeyError:
+			not DEBUG and print("Error: NT not connected @ data post")
 		
 	if valid and DEBUG:
 		print("Successfully processed frame %s" % frame_count)
@@ -315,35 +323,56 @@ process_thread = process_pool.submit(noop)
 
 if __name__ == '__main__':
 	LED_initialize(led_pin)
-	networkTableConnected = False
 
 	# Check for debug flag
 	if "--debug" in sys.argv or "-d" in sys.argv:
 			print("Debug mode activated!")
 			DEBUG=True
 			drawmode=DRAW_CONTOURS
-
+			
+	while (NetworkTables.isConnected() == False or table == None):
+		# Attempt connection to NetworkTables
+		try:
+			NetworkTables.initialize(server="roboRIO-2811-FRC.local")
+			table = NetworkTables.getTable("vision")
+			table.putBoolean("vision", True)
+		except:
+			not DEBUG and print("NT not initialized")
+			continue
+		
+		if None == table:
+			try:
+				table = NetworkTables.getTable("vision")
+			except:
+				not DEBUG and print("Table not initialized")
+	
 	# Attempt to connect to a camera
 	while cam==None:
 		try:
 			cam = cv2.VideoCapture(0)
-			NT_delete("camera_error")
+			table.delete("camera_error")
 			print("Camera operational!")
 		except:
-			NT_putString("camera_error","Unable to connect the camera!")
+			try:
+				table.putString("camera_error","Unable to connect the camera!")
+			except:
+				not DEBUG and print("NT not initialized at camera init fail")
 			print("Camera not available!")
 			time.sleep(1)
 	
 	# Main Loop
 	while(1):
-		# Attempt connection to NetworkTables
-		if False==networkTableConnected:
-			# Failure mode: Continue anyway (probably dev mode)
-			#NT_initialize("2811") or NT_initialize("2812")
-			NT_initialize("roboRIO-2811-FRC.frc-robot.local") or  NT_initialize("roboRIO-2811-frc.local") or NT_initialize("10.28.11.2") or NT_initialize("10.28.12.2") or NT_initialize("10.28.11.30")
-			networkTableConnected = True
-		if None == table:
-			NT_getTable()
+		# Precondition: NT is connected... we'll check on each op now too though
+		
+		## Attempt connection to NetworkTables
+		#if False==NetworkTables.isConnected():
+			#NetworkTables.initialize(server="roboRIO-2811-FRC.local")
+			#table = NetworkTables.getTable("vision")
+			#table.putBoolean("vision", True)
+			#continue # Sanity check by looping and evaling condition again
+		#if None == table:
+			#table = NetworkTables.getTable("vision")
+			#continue # Sanity check by looping and evaling condition again
 		# TODO periodically check and invalidate NetworkTables + Table if
 		# The connection gets dropped
 		# This should also set the enabled flag to false
@@ -352,10 +381,14 @@ if __name__ == '__main__':
 		# Which should only happen if we lose our table.
 
 		# Check if robot is enabled
-		if not NT_getBoolean("enabled", False) and not DEBUG:
-			print("Robot not enabled!")
-			time.sleep(0.05)
+		try:
+			enabled = table.getBoolean("enabled", False)
+		except:
+			print('ERR: NT not connected...')
 			continue
+		
+		if not enabled and not DEBUG:
+			print("Robot not enabled...")
 
 		#update our frame count
 		frame_count+=1
@@ -391,10 +424,7 @@ if __name__ == '__main__':
 				process_thread = process_pool.submit(image_process_pipeline,img)
 			else:
 				process_thread = process_pool.submit(image_process_pipeline,img)
-
-
-			
-			
+				
 		except Exception as error:
 			print("Ran into an error!")
 			print(error)
