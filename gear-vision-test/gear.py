@@ -61,6 +61,12 @@ for image_path in glob.glob('*.png'):
 	target = None
 	for c in meta:
 		one_inches_in_pixels = c['width']/2
+		# Fudging scale to check things
+		# The images are consistently off due to fisheye or some other
+		# random thing, and this mostly adjusts for it in a single 
+		# easy place.
+		one_inches_in_pixels = one_inches_in_pixels*.85
+		#
 		target = c['right_edge'] + one_inches_in_pixels * robot_camera_offset
 		target= int(target)
 		cv2.line(img2, c['center'], (target,c['center'][1]), color=(0,0,255))
