@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 ## Meaty vision functions!
 ##
 
-def get_diff(mirror=False):
+def get_diff_sources():
 	#GPIO.output(led_pin, True)
 	#time.sleep(.05)
 	lightson_ret, lightson_img = cam.read()
@@ -43,13 +43,10 @@ def get_diff(mirror=False):
 		# Alternatively, we can return a tuple with (validity,image)
 		height=480
 		width=640
-		return (False, (np.zeros((height,width,3), np.uint8)))
+		blank = np.zeros((height,width,3,np.uint8))
+		return (False, blank,blank )
 
-	diff_img = cv2.subtract(lightson_img, lightsoff_img)
-
-	if mirror: 
-		diff_img = cv2.flip(diff_img, 1)
-	return (True, diff_img)
+	return (True, lightson_img,lightsoff_img)
 
 def get_target_xy(img):
 	# print("processing... processing... PROCESSING.")
@@ -291,10 +288,19 @@ grip = GripPipeline()
 def noop():
 	pass
 
-def image_process_pipeline(img):
+def image_process_pipeline(img_on,img_off,frame,mirror=False):
+	ptime = time.time()
+
+	img = cv2.subtract(img_on, img_off)
+	
+	if mirror: 
+		img = cv2.flip(img, 1)
+
+	
 	valid,x_pos,y_pos = get_target_xy(img)
 	if not valid:
 		return (False,0,0,frame_count)
+	
 	distance = get_distance_to_boiler(y_pos)
 	angle=get_horizontal_angle_offset(x_pos)
 
@@ -315,7 +321,10 @@ def image_process_pipeline(img):
 		print("Horizontal angle :%02.4f degrees" % angle)
 		print("Distance         :%02.4f feet " % distance)
 		print("======")
-	return (valid, distance, angle,frame_count)
+		
+	ptime = time.time()-ptime
+	ptime = "%2.5fs" % ptime
+	return (valid, distance, angle,frame,ptime)
 
 
 process_pool = ThreadPoolExecutor(1)
@@ -330,7 +339,7 @@ if __name__ == '__main__':
 			DEBUG=True
 			drawmode=DRAW_CONTOURS
 			
-	while (NetworkTables.isConnected() == False or table == None):
+	while ( NetworkTables.isConnected() == False or table == None):
 		# Attempt connection to NetworkTables
 		try:
 			NetworkTables.initialize(server="roboRIO-2811-FRC.local")
@@ -345,6 +354,7 @@ if __name__ == '__main__':
 				table = NetworkTables.getTable("vision")
 			except:
 				not DEBUG and print("Table not initialized")
+		if(DEBUG): break
 	
 	# Attempt to connect to a camera
 	while cam==None:
@@ -396,7 +406,7 @@ if __name__ == '__main__':
 		# Shove all image processing subroutine calls here
 		try:
 			# Get diff image
-			valid, img = get_diff()
+			valid,imgon,imgof = get_diff_sources()
 
 			# Draw the diff if that's what you're into
 			if valid and drawmode==DRAW_DIFF:
@@ -421,9 +431,9 @@ if __name__ == '__main__':
 				print(process_thread.result())
 				
 				#restart the process with the newest image
-				process_thread = process_pool.submit(image_process_pipeline,img)
+				process_thread = process_pool.submit(image_process_pipeline,imgon,imgof,frame_count)
 			else:
-				process_thread = process_pool.submit(image_process_pipeline,img)
+				process_thread = process_pool.submit(image_process_pipeline,imgon,imgof,frame_count)
 				
 		except Exception as error:
 			print("Ran into an error!")
