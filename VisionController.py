@@ -25,15 +25,23 @@ from concurrent.futures import ThreadPoolExecutor
 ##
 ## Meaty vision functions!
 ##
+height=480
+width=640
+blank = np.zeros((height,width,3),np.uint8)
 
 def get_diff_sources():
+	#start = time.time()
+	#t=[]
 	#GPIO.output(led_pin, True)
-	#time.sleep(.05)
+	#t.append(time.time())
 	lightson_ret, lightson_img = cam.read()
+	#t.append(time.time())
 	GPIO.output(led_pin, False)
-	#time.sleep(.05)
+	#t.append(time.time())
 	lightsoff_ret, lightsoff_img = cam.read()
+	#t.append(time.time())
 	GPIO.output(led_pin, True)
+	#t.append(time.time())
 	
 	if not lightson_ret or not lightsoff_ret: 
 		print("Invalid image!")
@@ -41,10 +49,11 @@ def get_diff_sources():
 		# of an appropriate size 
 		# (or a really small image that just process as nothing instantly)
 		# Alternatively, we can return a tuple with (validity,image)
-		height=480
-		width=640
-		blank = np.zeros((height,width,3,np.uint8))
 		return (False, blank,blank )
+
+	#t.append(time.time())
+	#for i in t:
+		#print(i-start)
 
 	return (True, lightson_img,lightsoff_img)
 
@@ -288,7 +297,7 @@ grip = GripPipeline()
 def noop():
 	pass
 
-def image_process_pipeline(img_on,img_off,frame,mirror=False):
+def image_process_pipeline(img_on,img_off,frame,mirror=True):
 	ptime = time.time()
 
 	img = cv2.subtract(img_on, img_off)
@@ -321,9 +330,16 @@ def image_process_pipeline(img_on,img_off,frame,mirror=False):
 		print("Horizontal angle :%02.4f degrees" % angle)
 		print("Distance         :%02.4f feet " % distance)
 		print("======")
+	
+	#Uncomment to slow down the reporting stream
+	#and/or prove the multithreading works as expected
+	#time.sleep(0.4)
 		
 	ptime = time.time()-ptime
 	ptime = "%2.5fs" % ptime
+	
+	# Returned for convenience in printing
+	# Handle usage of this data in this thread
 	return (valid, distance, angle,frame,ptime)
 
 
@@ -338,6 +354,8 @@ if __name__ == '__main__':
 			print("Debug mode activated!")
 			DEBUG=True
 			drawmode=DRAW_CONTOURS
+			#drawmode=DRAW_DIFF
+			#drawmode=DRAW_DISABLED
 			
 	while ( NetworkTables.isConnected() == False or table == None):
 		# Attempt connection to NetworkTables
@@ -425,6 +443,7 @@ if __name__ == '__main__':
 			#	to process things quickly.
 			# TODO: Investigate using callbacks for NetworkTables publishing
 			if process_thread.running():
+				#print("Busy, skipping frame %i: %s" %frame_count,process_thread)
 				pass
 			elif process_thread.done():
 				# Do something with the current results 
@@ -433,6 +452,7 @@ if __name__ == '__main__':
 				#restart the process with the newest image
 				process_thread = process_pool.submit(image_process_pipeline,imgon,imgof,frame_count)
 			else:
+				print("????? Thread:%s"%process_thread)
 				process_thread = process_pool.submit(image_process_pipeline,imgon,imgof,frame_count)
 				
 		except Exception as error:
