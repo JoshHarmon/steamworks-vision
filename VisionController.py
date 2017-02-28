@@ -223,63 +223,6 @@ def LED_initialize(led):
 	GPIO.setup(led,GPIO.OUT)# Configure the GPIO as an output
 	GPIO.output(led, True)
 
-## 
-## NETWORK TABLES HELPER FUNCTIONS WITH WRAPPED TRY/EXCEPTS 
-## 
-
-def NT_initialize(address):
-	try:
-		NetworkTables.initialize(server=address)
-		print("Connected to ", address)
-		NT_getTable()
-		return True
-	except:
-		return False
-	else:
-		return False
-
-def NT_getTable(tableName="vision"):
-	if NetworkTables.isConnected():
-		table = NetworkTables.getTable(tableName)
-		print("Network table located!")
-		return table
-	else:
-		return None
-def image_process_pipeline(img,frameid):
-	fname="diff_%03s.jpg" % frameid
-	cv2.imwrite(fname,img)
-	return "Saved frameid "+fname
-
-def NT_putBoolean(key,value):
-	try: return table.putBoolean(key,value)
-	except: return default
-
-def NT_putNumber(key,value):
-	try: return table.putNumber(key,value)
-	except:pass
-
-def NT_putNumberArray(key,value):
-	try: table.putNumberArray(key,value)
-	except:pass
-
-def NT_putString(key,value):
-	try: table.putString(key,value)
-	except:pass
-
-def NT_getBoolean(key,default):
-	try: return table.getBoolean(key,default)
-	except: return default
-	# TODO: Maybe make this invalidate our table/networkTable connection?
-
-def NT_getNumber(key,default):
-	try: return table.getNumber(key,default)
-	except: return default
-
-def NT_delete(key):
-	try: return table.delete(key)
-	except: return default
-
-
 led_pin = 40
 table = None
 cam = None
@@ -292,6 +235,7 @@ drawmode = 0
 DRAW_DISABLED = 0
 DRAW_DIFF = 1
 DRAW_CONTOURS = 2
+
 grip = GripPipeline()
 
 def noop():
