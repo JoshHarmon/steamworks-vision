@@ -70,9 +70,7 @@ def get_target_xy(img):
 		if cv2.waitKey(1) == 27: # Esc
 			cv2.destroyAllWindows()
 			
-
-	#print('# contours:', len(contours))
-
+	# data array of basic contour properties
 	dArr = []
 
 	for i in range(len(contours)):
@@ -85,8 +83,6 @@ def get_target_xy(img):
 
 		dArr.append([i, cx, cy, area])
 		
-		#text_file.write("%d %d %d %d %d\n" % (i, cx, cy, area, count))
-
 	dArr.sort(key=lambda x: x[3], reverse=True)
 	
 	## Traits: Group Height, dTop, LEdge, Width ratio, Height ratio
@@ -97,31 +93,24 @@ def get_target_xy(img):
 		for j in range(i + 1, len(dArr)):
 			## The non-2 values should represent the top target (as we sort dArr by area and the top target is bigger)
 			## The -2 values, logically, represent the bottom target rect values
-			##print('getting rect i for idx', dArr[i][0], 'of contours list with max idx of', (len(contours) - 1))
 			x,y,w,h = cv2.boundingRect(contours[dArr[i][0]])  ## dArr[i][0] represents the true i-value of the contour
-			##print('getting rect j for idx', dArr[j][0], 'of contours list with max idx of', (len(contours) - 1))
 			x2,y2,w2,h2 = cv2.boundingRect(contours[dArr[j][0]])
 
 			## See how well the left edges of the targets line up
 			lEdgeTestValue = abs((((x - x2) / w) + 1))
 
-			## Note that these ratios are not safe until we've
-			## iterated based on greatest-least area... this may
-			## involve getting i from (sorted) dArr and fetching that i from
-			## the contours list
+			## As we are are iterating with bigger contours in i, these values should not get inverted
 			widthCompareTestValue = abs((w / w2)) ## Widths should be about the same
 			heightCompareTestValue = abs((h / (2*h2))) ## Top should be about twice as tall as bottom
 
-			areaCompareValue = abs(((w * h) / (w2 * h2)) - 2) ## .5 or (2) (need to force one later)
+			areaCompareValue = abs(((w * h) / (w2 * h2)) - 2) ## .5 or (2) (2 should be forced by iteration order)
 
 			totalTestScore = lEdgeTestValue + widthCompareTestValue + heightCompareTestValue + areaCompareValue
 
 			traitAnalysisArr.append([i, j, totalTestScore])
-	
-	## end traits loop
 
 	bestIdx = 0
-	bestScore = sys.maxsize # Remember: the scores are like golf; lower is better.
+	bestScore = sys.maxsize # Remember: the scores are like golf; lower is better. Anything will be lower than maxsize
 
 	if (len(traitAnalysisArr) > 0): # Do we have any contour pairs?
 		for i in range(len(traitAnalysisArr)):
@@ -132,11 +121,10 @@ def get_target_xy(img):
 		print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
 		print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
 		
-		# TODO: Check if changing this from i to bestIdx was appropriate
-		cdata = dArr[traitAnalysisArr[bestIdx][0]]
+		top_contour_data = dArr[traitAnalysisArr[bestIdx][0]]
 
-		dist_cy = cdata[2]
-		dist_cx = cdata[1]
+		dist_cy = top_contour_data[2]
+		dist_cx = top_contour_data[1]
 		
 		return True,dist_cx,dist_cy
 	else:
