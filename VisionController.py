@@ -128,22 +128,7 @@ def get_target_xy(img):
 			if (traitAnalysisArr[i][2] < bestScore):
 				bestIdx = i
 				bestScore = traitAnalysisArr[i][2]
-		
-		#TODO: How is [i] even defined here? It appears to simply be the last value set from
-		# the for loop above, which should equal the last item in traitAnalysisArr
-		# this working at all seems like a python scope bug, and probably not what you intended
-		# 
-		# I tested this, and the following code confirms that this is possible
-		#   for i in range(5):
-        #	  print i
-		#   print i
-		#   print i
-		# which prints 1,2,3,4,4,4
-		# 
-		# I think you forgot the sort function to sort by best score, eg
-		# traitAnalysisArr.sort(key=lambda x: x[2], reverse=True)
-
-
+				
 		print('Best score: pair', traitAnalysisArr[i], 'with a score of', traitAnalysisArr[i][2], '')
 		print('   ^ Contour 1: ', dArr[traitAnalysisArr[i][0]], ' || Contour 2: ', dArr[traitAnalysisArr[i][1]])
 		
@@ -198,6 +183,14 @@ def get_distance_to_boiler(target_cy):
 	print("Distance ", distance)
 
 	return distance
+
+def distance_from_regression(target_cy):
+	# From the regression, the math works out to be:
+	# px = 50.044 * disFt - 164.316
+	# px - 164.316 = 50.044 * disFt
+	# (px - 164.316) / 50.044 = disFt
+	
+	return (px - 164.316) / 50.044
 
 def get_horizontal_angle_offset(target_cx):
 	## TODO: Optimize to get cx as arg or get dArr value
