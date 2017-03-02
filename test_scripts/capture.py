@@ -21,11 +21,22 @@ if __name__ == '__main__':
 	current_dis = starting_distance
 	
 	cam = cv2.VideoCapture(0)
+	
+	if "--mirror" in sys.argv or "-m" in sys.argv:
+		mirror=True
+	
+	
 	while True:
 		try:
 			ret_val, img = cam.read()
+			
+			if not ret_val:
+				print("Something went wrong with the camera; ret_val is false")
+				continue
+				
 			if mirror: 
 				img = cv2.flip(img, 1)
+			
 			if ("--show" in sys.argv or "-s" in sys.argv):
 				cv2.imshow('my webcam', img)
 				key=cv2.waitKey(1)
