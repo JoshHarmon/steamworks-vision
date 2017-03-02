@@ -181,11 +181,9 @@ def distance_from_regression(target_cy):
 	return (px - 164.316) / 50.044
 
 def get_horizontal_angle_offset(target_cx):
-	## TODO: Optimize to get cx as arg or get dArr value
 	degrees_per_px = 1 / 12.30355
 	angle_offset = degrees_per_px * (target_cx - 320)
 	return angle_offset
-
 
 ##
 ## GENERAL SETUP SUB ROUTINES
@@ -235,8 +233,9 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 	if not valid:
 		return (False,0,0,frame_count)
 	
-	distance = get_distance_to_boiler(y_pos)
-	angle=get_horizontal_angle_offset(x_pos)
+	#distance = get_distance_to_boiler(y_pos)
+	distance = distance_from_regression(y_pos)
+	angle = get_horizontal_angle_offset(x_pos)
 
 	# Do cool stuff with valid data
 	if valid:
@@ -317,15 +316,6 @@ if __name__ == '__main__':
 	while(1):
 		# Precondition: NT is connected... we'll check on each op now too though
 		
-		## Attempt connection to NetworkTables
-		#if False==NetworkTables.isConnected():
-			#NetworkTables.initialize(server="roboRIO-2811-FRC.local")
-			#table = NetworkTables.getTable("vision")
-			#table.putBoolean("vision", True)
-			#continue # Sanity check by looping and evaling condition again
-		#if None == table:
-			#table = NetworkTables.getTable("vision")
-			#continue # Sanity check by looping and evaling condition again
 		# TODO periodically check and invalidate NetworkTables + Table if
 		# The connection gets dropped
 		# This should also set the enabled flag to false
@@ -338,6 +328,14 @@ if __name__ == '__main__':
 			enabled = table.getBoolean("enabled", False)
 		except:
 			print('ERR: NT not connected...')
+			if NetworkTables.isConnected():
+				# The table handle is our problem
+				table = NetworkTables.getTable("vision")
+			else:
+				# The actual connection is at fault
+				# Try reconnecting
+				NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+				table = NetworkTables.getTable("vision")
 			continue
 		
 		if not enabled and not DEBUG:
