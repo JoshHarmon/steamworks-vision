@@ -2,7 +2,12 @@ import cv2
 import numpy as np
 import grip
 import glob
+
+from networktables import NetworkTables
+
 pipeline = grip.GearPipeline()
+
+NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 
 for image_path in glob.glob('*.png'):
 	img = cv2.imread(image_path)
@@ -85,6 +90,17 @@ for image_path in glob.glob('*.png'):
 	fov_per_pixel = 50.2/640
 	if target:
 		error_angle = (forward_pixel-target)*fov_per_pixel
+		if NetworkTables.isConnected():
+			try:
+				table = NetworkTables.getTable("vision_gear");
+				table.putNumber("error_angle", error_angle)
+				print("Yay! Posted to NetworkTables!")
+			except:
+				print("Values not posted to NT.")
+				# try connecting again so that things might work next time
+				if not NetworkTables.isConnected():
+					NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+		
 		text = "%0.2f" % error_angle
 		font = cv2.FONT_HERSHEY_SIMPLEX
 		cv2.putText(img2,text,(10,60),font, 1,(255,255,255),2,cv2.LINE_AA)
