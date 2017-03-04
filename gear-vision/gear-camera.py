@@ -11,9 +11,11 @@ NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 
 frame_count = 0
 
-for image_path in glob.glob('*.png'):
+camera = cv2.VideoCapture(0)
+
+while True:
 	frame_count += 1
-	img = cv2.imread(image_path)
+	ret_val, img = camera.read()
 	print(pipeline.process(img))
 	all_contours = pipeline.filter_contours_output
 	meta = []
@@ -110,9 +112,7 @@ for image_path in glob.glob('*.png'):
 		cv2.putText(img2,text,(10,60),font, 1,(255,255,255),2,cv2.LINE_AA)
 
 	# Show the image
-	# Hit escape to cycle
-	while(1):
-		cv2.imshow('gear view', img2)
-		if cv2.waitKey(1) == 27: # Esc
-			break
-cv2.destroyAllWindows()
+	#cv2.imshow('gear view', img2)
+	#if cv2.waitKey(1) == 27: # Esc
+	#	break
+#cv2.destroyAllWindows()
