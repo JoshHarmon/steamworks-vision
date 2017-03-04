@@ -242,9 +242,9 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 		# Post data to NWTables
 		# update frame_count
 		try:
-			table.putNumber("angle", angle)
-			table.putNumber("distance", distance)
-			table.putNumber("frame", frame_count)
+			table.putNumber("boiler_angle", angle)
+			table.putNumber("boiler_distance", distance)
+			table.putNumber("boiler_frame_count", frame_count)
 		except KeyError:
 			not DEBUG and print("Error: NT not connected @ data post")
 		
