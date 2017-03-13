@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 import grip
-import glob
 
 from networktables import NetworkTables
+from socket import error as SocketError
+import errno
 
 pipeline = grip.GearPipeline()
 
@@ -12,6 +13,9 @@ NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 frame_count = 0
 
 camera = cv2.VideoCapture(0)
+
+num_nt_failures = 0
+rio_last_heartbeat = -1
 
 while True:
 	frame_count += 1
@@ -103,14 +107,60 @@ while True:
 				print("Yay! Posted to NetworkTables!")
 			except:
 				print("Values not posted to NT.")
-				# try connecting again so that things might work next time
+				# try connecting again so that things might work next time.
+				# this might not be the best solution though; if networktables
+				# feels that it's still connected, even when it isn't, it will
+				# throw an exception if you call initialize() again
 				if not NetworkTables.isConnected():
 					NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 		
 		text = "%0.2f" % error_angle
 		font = cv2.FONT_HERSHEY_SIMPLEX
 		cv2.putText(img2,text,(10,60),font, 1,(255,255,255),2,cv2.LINE_AA)
+	
+	# Aaaand now the heartbeat check fun begins...
+	if NetworkTables.isConnected():
+		try:
+			sdtable = NetworkTables.getTable("SmartDashboard")
+			table.putNumber("raspi_heartbeat", frame_count)
+			print("Sent heartbeat...")
+			
+			# Now see if we're still connected to the RIO
+			# Even with NetworkTables apparently trying to cache things,
+			# we can determine if things are still connected based on if
+			# the RIO's heartbeat value updates. If we go offline, the value
+			# can't possibly update.
+			rio_heartbeat = sdtable.getNumber("rio_heartbeat", -1)
 
+			if (rio_heartbeat > rio_last_heartbeat):
+				print("Probably connected... (%d vs %d)" % (rio_heartbeat, rio_last_heartbeat))
+
+				if (num_nt_failures > 0):
+					print("... After %d failures" % num_nt_failures)
+					# clear NT failures counter
+					num_nt_failures = 0
+			elif (rio_heartbeat == rio_last_heartbeat):
+				print("Possibly disconnected - RIO heartbeat unchanged")
+
+				if (num_nt_failures > 0):
+					print("... After %d failures" % num_nt_failures)
+				# add to failures counter, as this is a potential problem
+				num_nt_failures += 1
+			else:
+				print("Possibly reconnected/reset (%d vs %d)" % (rio_heartbeat, rio_last_heartbeat))
+				if (num_nt_failures > 0):
+					print("Failure %d")
+				num_nt_failures += 1
+		except SocketError as e:
+			if e.errno != errno.ECONNRESET: # Usually happens if the RIO goes offline then comes back
+        		raise # Not error we are looking for
+        		print("Socket error (but not conn reset) caught...")
+    		# Handle error here
+    		print("Connection reset caught... RIO may have come back online...")
+		except:
+			print("Failed to send heartbeat... Perhaps we're disconnected?")
+	else:
+		print("NetworkTables isn't even connected... :(")
 	# Show the image
 	#cv2.imshow('gear view', img2)
 	#if cv2.waitKey(1) == 27: # Esc
