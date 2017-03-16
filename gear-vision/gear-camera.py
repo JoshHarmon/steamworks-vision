@@ -48,6 +48,12 @@ while True:
 
 	# Only keep things that are very rectanglular in nature
 	rect_tolerance = 0.18
+	
+	if NetworkTables.isConnected():
+		# Get the preference value from networktables
+		# And if that doesn't work, just keep our current value
+		rect_tolerance = table.getNumber("pref_rect_tolerance", rect_tolerance)
+	
 	meta = [x for x in meta if (1-rect_tolerance<x['rect']<1+rect_tolerance) ]
 	for c in meta:
 		print((c['rect'],c['box'],c['center']))
@@ -57,6 +63,11 @@ while True:
 	# However, the height will be fairly consistent. As a result, we'll never see something
 	# with h/w ratio less than 2, although it might be somewhat greater.
 	hw_tolerance=(1.9,3)
+	
+	if NetworkTables.isConnected():
+		hw_tolerance[0] = table.getNumber("pref_hw_tolerance_low", hw_tolerance[0])
+		hw_tolerance[1] = table.getNumber("pref_hw_tolerance_high", hw_tolerance[1])
+	
 	meta = [x for x in meta if (hw_tolerance[0]<x['height']/x['width']<hw_tolerance[1]) ]
 
 	# Draw all valid looking contours
@@ -79,8 +90,12 @@ while True:
 		# The images are consistently off due to fisheye or some other
 		# random thing, and this mostly adjusts for it in a single 
 		# easy place.
-		one_inches_in_pixels = one_inches_in_pixels*.85
-		#
+		ff = 0.85
+		if NetworkTables.isConnected():
+			ff = table.getNumber("pref_ff", 0.85)
+
+		one_inches_in_pixels = one_inches_in_pixels * ff
+
 		target = c['right_edge'] + one_inches_in_pixels * robot_camera_offset
 		target= int(target)
 		cv2.line(img2, c['center'], (target,c['center'][1]), color=(0,0,255))
