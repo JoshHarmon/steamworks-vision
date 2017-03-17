@@ -17,6 +17,8 @@ camera = cv2.VideoCapture(0)
 num_nt_failures = 0
 rio_last_heartbeat = -1
 
+table = NetworkTables.getTable("vision")
+
 while True:
 	frame_count += 1
 	ret_val, img = camera.read()
@@ -28,11 +30,11 @@ while True:
 		
 		box =  cv2.boundingRect(c)
 		x,y,w,h = box
-		print("=====")
-		print(area)
-		print(w*h)
+		#print("=====")
+		#print(area)
+		#print(w*h)
 		center = (int(x+w/2),int(y+h/2))
-		print(h/w)
+		#print(h/w)
 		
 		d={}
 		d={
@@ -62,7 +64,7 @@ while True:
 	# Because of parrallax, things will likely be "thinner" as we near them or are to the side. 
 	# However, the height will be fairly consistent. As a result, we'll never see something
 	# with h/w ratio less than 2, although it might be somewhat greater.
-	hw_tolerance=(1.9,3)
+	hw_tolerance=[1.9,3]
 	
 	if NetworkTables.isConnected():
 		hw_tolerance[0] = table.getNumber("pref_hw_tolerance_low", hw_tolerance[0])
@@ -116,7 +118,7 @@ while True:
 		error_angle = (forward_pixel-target)*fov_per_pixel
 		if NetworkTables.isConnected():
 			try:
-				table = NetworkTables.getTable("vision");
+				#table = NetworkTables.getTable("vision");
 				table.putNumber("gear_error_angle", error_angle)
 				table.putNumber("gear_frame_number", frame_count)
 				print("Yay! Posted to NetworkTables!")
@@ -137,7 +139,7 @@ while True:
 	if NetworkTables.isConnected():
 		try:
 			sdtable = NetworkTables.getTable("SmartDashboard")
-			table.putNumber("raspi_heartbeat", frame_count)
+			sdtable.putNumber("raspi_heartbeat", frame_count)
 			print("Sent heartbeat...")
 			
 			# Now see if we're still connected to the RIO
@@ -154,6 +156,7 @@ while True:
 					print("... After %d failures" % num_nt_failures)
 					# clear NT failures counter
 					num_nt_failures = 0
+				rio_last_heartbeat = rio_heartbeat
 			elif (rio_heartbeat == rio_last_heartbeat):
 				print("Possibly disconnected - RIO heartbeat unchanged")
 
@@ -168,10 +171,10 @@ while True:
 				num_nt_failures += 1
 		except SocketError as e:
 			if e.errno != errno.ECONNRESET: # Usually happens if the RIO goes offline then comes back
-        		raise # Not error we are looking for
-        		print("Socket error (but not conn reset) caught...")
-    		# Handle error here
-    		print("Connection reset caught... RIO may have come back online...")
+				raise # Not error we are looking for
+				print("Socket error (but not conn reset) caught...")
+			# Handle error here
+			print("Connection reset caught... RIO may have come back online...")
 		except:
 			print("Failed to send heartbeat... Perhaps we're disconnected?")
 	else:
