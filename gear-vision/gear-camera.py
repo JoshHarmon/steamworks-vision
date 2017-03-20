@@ -22,6 +22,13 @@ table = NetworkTables.getTable("vision")
 while True:
 	frame_count += 1
 	ret_val, img = camera.read()
+	
+	if not ret_val:
+		# Weren't able to get an image...
+		# We'll just fail semi-silently here, outputting no data
+		# This needs to catch us before we try to process img
+		continue
+	
 	print(pipeline.process(img))
 	all_contours = pipeline.filter_contours_output
 	meta = []
