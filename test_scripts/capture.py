@@ -8,6 +8,7 @@ Press <esc> to quit.
 import cv2
 import numpy
 import os
+import sys
 frame = 1
 mirror = False
 
@@ -32,6 +33,7 @@ if __name__ == '__main__':
 			
 			if not ret_val:
 				print("Something went wrong with the camera; ret_val is false")
+				exit(1)
 				continue
 				
 			if mirror: 

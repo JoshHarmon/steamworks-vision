@@ -193,7 +193,7 @@ while True:
 	else:
 		print("NetworkTables isn't even connected... :(")
 	# Show the image
-	#cv2.imshow('gear view', img2)
-	#if cv2.waitKey(1) == 27: # Esc
-	#	break
+	cv2.imshow('gear view', img2)
+	if cv2.waitKey(1) == 27: # Esc
+		break
 #cv2.destroyAllWindows()

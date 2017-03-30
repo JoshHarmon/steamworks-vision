@@ -1,5 +1,11 @@
 """
 2017 Steamworks vision code for Team 2811 (StormBots)
+
+Picks a boiler-like target and pushes values for the RIO
+to do *fun* calculations with.
+
+Coordinate for alignment: vision --> boiler_alignment_cy
+Coordinate for distance : vision --> boiler_distance_cx
 """
 
 import cv2
@@ -172,6 +178,51 @@ def get_distance_to_boiler(target_cy):
 
 	return distance
 
+def distance_from_interpolation_portrait(target_cx):
+	table = np.array([
+			##[PX, DISTANCE]
+				[1,2],
+				[3,4],
+				[5,6]
+			])
+	i = 0
+	while target_cx > interpolation_table[i][0] and i < len(interpolation_table) - 1:
+		i++
+	#   Initial point  +    S            L             O             P                E       *     deltaX
+	return table[i][1] + ((table[i+1][1] - table[i][1]) / (table[i+1][0] - table[i][0])) * (target_cx - table[i][0])
+	
+'''
+                    UP                                       RIGHT
+        LEFT                    RIGHT                UP             DOWN               
+                    DOWN                                     LEFT
+
+RIGHT is now y = 0
+UP is now x = 0
+LEFT is now y = 360
+DOWN is now x = 640
+
+'''
+
+def push_coordinate_for_distance_portrait(target_cx):
+	if NetworkTables.isConnected():
+		try:
+			table.putNumber("boiler_distance_cx", target_cx)
+			return True
+		except:
+			return False
+	else:
+		return False
+
+def push_coordinate_for_alignment_portrait(target_cy):
+	if NetworkTables.isConnected():
+		try:
+			table.putNumber("boiler_angle_cy", target_cy)
+			return True
+		except:
+			return False
+	else:
+		return False
+	
 def distance_from_regression(target_cy):
 	# From the regression, the math works out to be:
 	# px = 50.044 * disFt - 164.316
@@ -234,17 +285,19 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 		return (False,0,0,frame_count)
 	
 	#distance = get_distance_to_boiler(y_pos)
-	distance = distance_from_regression(y_pos)
-	angle = get_horizontal_angle_offset(x_pos)
+	#distance = distance_from_regression(y_pos)
+	#angle = get_horizontal_angle_offset(x_pos)
 
 	# Do cool stuff with valid data
 	if valid:
 		# Post data to NWTables
 		# update frame_count
 		try:
-			table.putNumber("boiler_angle", angle)
-			table.putNumber("boiler_distance", distance)
-			table.putNumber("boiler_frame_count", frame_count)
+			#table.putNumber("boiler_angle", angle)
+			#table.putNumber("boiler_distance", distance)
+			#table.putNumber("boiler_frame_count", frame_count)
+			push_coordinate_for_alignment_portrait(target_cy)
+			push_coordinate_for_distance_portrait(target_cx)
 		except KeyError:
 			not DEBUG and print("Error: NT not connected @ data post")
 		
@@ -301,7 +354,7 @@ if __name__ == '__main__':
 	# Attempt to connect to a camera
 	while cam==None:
 		try:
-			cam = cv2.VideoCapture(0)
+			cam = cv2.VideoCapture(1)
 			table.delete("camera_error")
 			print("Camera operational!")
 		except:
