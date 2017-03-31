@@ -294,7 +294,6 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 	
 	valid,x_pos,y_pos = get_target_xy(img)
 
-	push_frame_counter(frame_count)
 	if not valid:
 		return (False,0,0,frame_count)
 	
@@ -310,8 +309,8 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 			#table.putNumber("boiler_angle", angle)
 			#table.putNumber("boiler_distance", distance)
 			#table.putNumber("boiler_frame_count", frame_count)
-			push_coordinate_for_alignment_portrait(target_cy,frame_count)
-			push_coordinate_for_distance_portrait(target_cx,frame_count)
+			push_coordinate_for_alignment_portrait(y_pos,frame_count)
+			push_coordinate_for_distance_portrait(x_pos,frame_count)
 		except KeyError:
 			not DEBUG and print("Error: NT not connected @ data post")
 		
@@ -331,7 +330,7 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 	
 	# Returned for convenience in printing
 	# Handle usage of this data in this thread
-	return (valid, distance, angle,frame,ptime)
+	return (valid, x_pos, y_pos,frame_count,ptime)
 
 
 process_pool = ThreadPoolExecutor(1)
@@ -351,7 +350,7 @@ if __name__ == '__main__':
 	while ( NetworkTables.isConnected() == False or table == None):
 		# Attempt connection to NetworkTables
 		try:
-			NetworkTables.initialize(server="roboRIO-2811-FRC.local")
+			NetworkTables.initialize(server="10.28.11.2")
 			table = NetworkTables.getTable("vision")
 			table.putBoolean("vision", True)
 		except:
@@ -368,7 +367,8 @@ if __name__ == '__main__':
 	# Attempt to connect to a camera
 	while cam==None:
 		try:
-			cam = cv2.VideoCapture(1)
+			#cam = cv2.VideoCapture(1)
+			cam = cv2.VideoCapture(0)
 			table.delete("camera_error")
 			print("Camera operational!")
 		except:
@@ -401,12 +401,13 @@ if __name__ == '__main__':
 			else:
 				# The actual connection is at fault
 				# Try reconnecting
-				NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+				NetworkTables.initialize(server='10.28.11.2')
 				table = NetworkTables.getTable("vision")
 			continue
 		
 		if not enabled and not DEBUG:
 			print("Robot not enabled...")
+			continue
 
 		#update our frame count
 		frame_count+=1
@@ -415,6 +416,9 @@ if __name__ == '__main__':
 		try:
 			# Get diff image
 			valid,imgon,imgof = get_diff_sources()
+			
+			if valid == False:
+				continue
 
 			# Draw the diff if that's what you're into
 			if valid and drawmode==DRAW_DIFF:
@@ -450,7 +454,7 @@ if __name__ == '__main__':
 			print(error)
 			print(traceback.format_exc())
 
-			#raise(error) #comment this line to continue running despite errors
+			raise(error) #comment this line to continue running despite errors
 			continue
 			
 		# Sleep a bit. This should help with some of the overheating issues,
