@@ -367,8 +367,8 @@ if __name__ == '__main__':
 	# Attempt to connect to a camera
 	while cam==None:
 		try:
-			#cam = cv2.VideoCapture(1)
-			cam = cv2.VideoCapture(0)
+			cam = cv2.VideoCapture(1)
+			#cam = cv2.VideoCapture(0)
 			table.delete("camera_error")
 			print("Camera operational!")
 		except:
@@ -390,9 +390,13 @@ if __name__ == '__main__':
 		# Another reasonable spot is in except block of getBoolean, 
 		# Which should only happen if we lose our table.
 
+		#update our frame count
+		frame_count+=1
+		
 		# Check if robot is enabled
 		try:
 			enabled = table.getBoolean("enabled", False)
+			table.putNumber("heartbeat",frame_count)
 		except:
 			print('ERR: NT not connected...')
 			if NetworkTables.isConnected():
@@ -409,8 +413,6 @@ if __name__ == '__main__':
 			print("Robot not enabled...")
 			continue
 
-		#update our frame count
-		frame_count+=1
 
 		# Shove all image processing subroutine calls here
 		try:
