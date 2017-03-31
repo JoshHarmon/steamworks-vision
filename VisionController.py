@@ -178,18 +178,18 @@ def get_distance_to_boiler(target_cy):
 
 	return distance
 
-def distance_from_interpolation_portrait(target_cx):
-	table = np.array([
-			##[PX, DISTANCE]
-				[1,2],
-				[3,4],
-				[5,6]
-			])
-	i = 0
-	while target_cx > interpolation_table[i][0] and i < len(interpolation_table) - 1:
-		i++
-	#   Initial point  +    S            L             O             P                E       *     deltaX
-	return table[i][1] + ((table[i+1][1] - table[i][1]) / (table[i+1][0] - table[i][0])) * (target_cx - table[i][0])
+# def distance_from_interpolation_portrait(target_cx):
+# 	table = np.array([
+# 			##[PX, DISTANCE]
+# 				[1,2],
+# 				[3,4],
+# 				[5,6]
+# 			])
+# 	i = 0
+# 	while target_cx > interpolation_table[i][0] and i < len(interpolation_table) - 1:
+# 		i++
+# 	#   Initial point  +    S            L             O             P                E       *     deltaX
+# 	return table[i][1] + ((table[i+1][1] - table[i][1]) / (table[i+1][0] - table[i][0])) * (target_cx - table[i][0])
 	
 '''
                     UP                                       RIGHT
@@ -203,38 +203,50 @@ DOWN is now x = 640
 
 '''
 
-def push_coordinate_for_distance_portrait(target_cx):
+def push_coordinate_for_distance_portrait(target_cx,frameid):
 	if NetworkTables.isConnected():
 		try:
 			table.putNumber("boiler_distance_cx", target_cx)
+			table.putNumber("boiler_distance_cx_frame_id", frameid)
 			return True
 		except:
 			return False
 	else:
 		return False
 
-def push_coordinate_for_alignment_portrait(target_cy):
+def push_coordinate_for_alignment_portrait(target_cy,frameid):
 	if NetworkTables.isConnected():
 		try:
 			table.putNumber("boiler_angle_cy", target_cy)
+			table.putNumber("boiler_angle_cy_frame_id", frameid)
 			return True
 		except:
 			return False
 	else:
 		return False
-	
-def distance_from_regression(target_cy):
-	# From the regression, the math works out to be:
-	# px = 50.044 * disFt - 164.316
-	# px - 164.316 = 50.044 * disFt
-	# (px - 164.316) / 50.044 = disFt
-	
-	return (px - 164.316) / 50.044
 
-def get_horizontal_angle_offset(target_cx):
-	degrees_per_px = 1 / 12.30355
-	angle_offset = degrees_per_px * (target_cx - 320)
-	return angle_offset
+def push_frame_counter(frame):
+	if NetworkTables.isConnected():
+		try:
+			table.putNumber("boiler_frame_counter", frameid)
+			return True
+		except:
+			return False
+	else:
+		return False
+
+# def distance_from_regression(target_cy):
+# 	# From the regression, the math works out to be:
+# 	# px = 50.044 * disFt - 164.316
+# 	# px - 164.316 = 50.044 * disFt
+# 	# (px - 164.316) / 50.044 = disFt
+	
+# 	return (px - 164.316) / 50.044
+
+# def get_horizontal_angle_offset(target_cx):
+# 	degrees_per_px = 1 / 12.30355
+# 	angle_offset = degrees_per_px * (target_cx - 320)
+# 	return angle_offset
 
 ##
 ## GENERAL SETUP SUB ROUTINES
@@ -281,6 +293,8 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 
 	
 	valid,x_pos,y_pos = get_target_xy(img)
+
+	push_frame_counter(frame_count)
 	if not valid:
 		return (False,0,0,frame_count)
 	
@@ -296,8 +310,8 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 			#table.putNumber("boiler_angle", angle)
 			#table.putNumber("boiler_distance", distance)
 			#table.putNumber("boiler_frame_count", frame_count)
-			push_coordinate_for_alignment_portrait(target_cy)
-			push_coordinate_for_distance_portrait(target_cx)
+			push_coordinate_for_alignment_portrait(target_cy,frame_count)
+			push_coordinate_for_distance_portrait(target_cx,frame_count)
 		except KeyError:
 			not DEBUG and print("Error: NT not connected @ data post")
 		
