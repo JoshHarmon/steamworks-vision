@@ -10,6 +10,8 @@ pipeline = grip.GearPipeline()
 
 #NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 NetworkTables.initialize(server='10.28.11.2')
+NetworkTables.setUpdateRate(0.020)
+NetworkTables.setWriteFlushPeriod(0.020)
 
 frame_count = 0
 
@@ -139,6 +141,9 @@ while True:
 				if not NetworkTables.isConnected():
 					#NetworkTables.initialize(server='roboRIO-2811-FRC.local')
 					NetworkTables.initialize(server='10.28.11.2')
+					NetworkTables.setUpdateRate(0.020)
+					NetworkTables.setWriteFlushPeriod(0.020)
+
 		text = "%0.2f" % error_angle
 		font = cv2.FONT_HERSHEY_SIMPLEX
 		cv2.putText(img2,text,(10,60),font, 1,(255,255,255),2,cv2.LINE_AA)

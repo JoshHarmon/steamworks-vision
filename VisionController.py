@@ -72,9 +72,10 @@ def get_target_xy(img):
 	img2 = cv2.drawContours(img, contours, -1, (0,255,0), 3)
 
 	if drawmode==DRAW_CONTOURS:
-		cv2.imshow('diff w/ contours', img2)
-		if cv2.waitKey(1) == 27: # Esc
-			cv2.destroyAllWindows()
+		#cv2.imshow('diff w/ contours', img2)
+		#if cv2.waitKey(1) == 27: # Esc
+			#cv2.destroyAllWindows()
+		pass
 			
 	# data array of basic contour properties
 	dArr = []
@@ -351,6 +352,8 @@ if __name__ == '__main__':
 		# Attempt connection to NetworkTables
 		try:
 			NetworkTables.initialize(server="10.28.11.2")
+			NetworkTables.setUpdateRate(0.020)
+			NetworkTables.setWriteFlushPeriod(0.020)
 			table = NetworkTables.getTable("vision")
 			table.putBoolean("vision", True)
 		except:
@@ -397,6 +400,7 @@ if __name__ == '__main__':
 		try:
 			enabled = table.getBoolean("enabled", False)
 			table.putNumber("heartbeat",frame_count)
+			time.sleep(0.015)
 		except:
 			print('ERR: NT not connected...')
 			if NetworkTables.isConnected():
@@ -406,6 +410,9 @@ if __name__ == '__main__':
 				# The actual connection is at fault
 				# Try reconnecting
 				NetworkTables.initialize(server='10.28.11.2')
+				NetworkTables.setUpdateRate(0.020)
+				NetworkTables.setWriteFlushPeriod(0.020)
+
 				table = NetworkTables.getTable("vision")
 			continue
 		
@@ -425,10 +432,11 @@ if __name__ == '__main__':
 			# Draw the diff if that's what you're into
 			if valid and drawmode==DRAW_DIFF:
 				try:
-					cv2.imshow('diff', img)
-					if cv2.waitKey(1) == 27:
-						cv2.destroyAllWindows()
-						break
+					#cv2.imshow('diff', img)
+					#if cv2.waitKey(1) == 27:
+						#cv2.destroyAllWindows()
+						#break
+					pass
 				except:pass
 
 			#If our worker thread is idle, break off and start 
@@ -465,5 +473,5 @@ if __name__ == '__main__':
 		#time.sleep(0.1)
 		
 	# Post cleanup!
-	cv2.destroyAllWindows()
+	#cv2.destroyAllWindows()
 	GPIO.output(led_pin, False)
