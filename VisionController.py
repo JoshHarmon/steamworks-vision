@@ -40,14 +40,15 @@ def get_diff_sources():
 	#t=[]
 	#GPIO.output(led_pin, True)
 	#t.append(time.time())
-	lightson_ret, lightson_img = cam.read()
-	#t.append(time.time())
-	GPIO.output(led_pin, False)
+	### Where lightson_img used to be taken
 	#t.append(time.time())
 	lightsoff_ret, lightsoff_img = cam.read()
 	#t.append(time.time())
 	GPIO.output(led_pin, True)
 	#t.append(time.time())
+	lightson_ret, lightson_img = cam.read()
+	#t.append(time.time())
+	GPIO.output(led_pin, False)
 	
 	if not lightson_ret or not lightsoff_ret: 
 		print("Invalid image!")
@@ -72,9 +73,10 @@ def get_target_xy(img):
 	img2 = cv2.drawContours(img, contours, -1, (0,255,0), 3)
 
 	if drawmode==DRAW_CONTOURS:
-		cv2.imshow('diff w/ contours', img2)
-		if cv2.waitKey(1) == 27: # Esc
-			cv2.destroyAllWindows()
+		#cv2.imshow('diff w/ contours', img2)
+		#if cv2.waitKey(1) == 27: # Esc
+			#cv2.destroyAllWindows()
+		pass
 			
 	# data array of basic contour properties
 	dArr = []
@@ -103,11 +105,11 @@ def get_target_xy(img):
 			x2,y2,w2,h2 = cv2.boundingRect(contours[dArr[j][0]])
 
 			## See how well the left edges of the targets line up
-			lEdgeTestValue = abs((((x - x2) / w) + 1))
+			lEdgeTestValue = abs((((y - y2) / h) + 1))
 
 			## As we are are iterating with bigger contours in i, these values should not get inverted
-			widthCompareTestValue = abs((w / w2)) ## Widths should be about the same
-			heightCompareTestValue = abs((h / (2*h2))) ## Top should be about twice as tall as bottom
+			widthCompareTestValue = abs((h / h2)) ## Widths should be about the same
+			heightCompareTestValue = abs((w / (2*w2))) ## Top should be about twice as tall as bottom
 
 			areaCompareValue = abs(((w * h) / (w2 * h2)) - 2) ## .5 or (2) (2 should be forced by iteration order)
 
@@ -178,18 +180,18 @@ def get_distance_to_boiler(target_cy):
 
 	return distance
 
-def distance_from_interpolation_portrait(target_cx):
-	table = np.array([
-			##[PX, DISTANCE]
-				[1,2],
-				[3,4],
-				[5,6]
-			])
-	i = 0
-	while target_cx > interpolation_table[i][0] and i < len(interpolation_table) - 1:
-		i++
-	#   Initial point  +    S            L             O             P                E       *     deltaX
-	return table[i][1] + ((table[i+1][1] - table[i][1]) / (table[i+1][0] - table[i][0])) * (target_cx - table[i][0])
+# def distance_from_interpolation_portrait(target_cx):
+# 	table = np.array([
+# 			##[PX, DISTANCE]
+# 				[1,2],
+# 				[3,4],
+# 				[5,6]
+# 			])
+# 	i = 0
+# 	while target_cx > interpolation_table[i][0] and i < len(interpolation_table) - 1:
+# 		i++
+# 	#   Initial point  +    S            L             O             P                E       *     deltaX
+# 	return table[i][1] + ((table[i+1][1] - table[i][1]) / (table[i+1][0] - table[i][0])) * (target_cx - table[i][0])
 	
 '''
                     UP                                       RIGHT
@@ -203,38 +205,50 @@ DOWN is now x = 640
 
 '''
 
-def push_coordinate_for_distance_portrait(target_cx):
+def push_coordinate_for_distance_portrait(target_cx,frameid):
 	if NetworkTables.isConnected():
 		try:
 			table.putNumber("boiler_distance_cx", target_cx)
+			table.putNumber("boiler_distance_cx_frame_id", frameid)
 			return True
 		except:
 			return False
 	else:
 		return False
 
-def push_coordinate_for_alignment_portrait(target_cy):
+def push_coordinate_for_alignment_portrait(target_cy,frameid):
 	if NetworkTables.isConnected():
 		try:
 			table.putNumber("boiler_angle_cy", target_cy)
+			table.putNumber("boiler_angle_cy_frame_id", frameid)
 			return True
 		except:
 			return False
 	else:
 		return False
-	
-def distance_from_regression(target_cy):
-	# From the regression, the math works out to be:
-	# px = 50.044 * disFt - 164.316
-	# px - 164.316 = 50.044 * disFt
-	# (px - 164.316) / 50.044 = disFt
-	
-	return (px - 164.316) / 50.044
 
-def get_horizontal_angle_offset(target_cx):
-	degrees_per_px = 1 / 12.30355
-	angle_offset = degrees_per_px * (target_cx - 320)
-	return angle_offset
+def push_frame_counter(frame):
+	if NetworkTables.isConnected():
+		try:
+			table.putNumber("boiler_frame_counter", frameid)
+			return True
+		except:
+			return False
+	else:
+		return False
+
+# def distance_from_regression(target_cy):
+# 	# From the regression, the math works out to be:
+# 	# px = 50.044 * disFt - 164.316
+# 	# px - 164.316 = 50.044 * disFt
+# 	# (px - 164.316) / 50.044 = disFt
+	
+# 	return (px - 164.316) / 50.044
+
+# def get_horizontal_angle_offset(target_cx):
+# 	degrees_per_px = 1 / 12.30355
+# 	angle_offset = degrees_per_px * (target_cx - 320)
+# 	return angle_offset
 
 ##
 ## GENERAL SETUP SUB ROUTINES
@@ -281,6 +295,7 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 
 	
 	valid,x_pos,y_pos = get_target_xy(img)
+
 	if not valid:
 		return (False,0,0,frame_count)
 	
@@ -296,17 +311,18 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 			#table.putNumber("boiler_angle", angle)
 			#table.putNumber("boiler_distance", distance)
 			#table.putNumber("boiler_frame_count", frame_count)
-			push_coordinate_for_alignment_portrait(target_cy)
-			push_coordinate_for_distance_portrait(target_cx)
+			push_coordinate_for_alignment_portrait(y_pos,frame_count)
+			push_coordinate_for_distance_portrait(x_pos,frame_count)
 		except KeyError:
 			not DEBUG and print("Error: NT not connected @ data post")
 		
 	if valid and DEBUG:
-		print("Successfully processed frame %s" % frame_count)
-		print("time:",time.strftime("%a, %d %b %Y %H:%M:%S.%f", time.gmtime()))
-		print("Horizontal angle :%02.4f degrees" % angle)
-		print("Distance         :%02.4f feet " % distance)
-		print("======")
+		#print("Successfully processed frame %s" % frame_count)
+		#print("time:",time.strftime("%a, %d %b %Y %H:%M:%S.%f", time.gmtime()))
+		#print("Horizontal angle :%02.4f degrees" % angle)
+		#print("Distance         :%02.4f feet " % distance)
+		#print("======")
+		pass
 	
 	#Uncomment to slow down the reporting stream
 	#and/or prove the multithreading works as expected
@@ -317,7 +333,7 @@ def image_process_pipeline(img_on,img_off,frame,mirror=True):
 	
 	# Returned for convenience in printing
 	# Handle usage of this data in this thread
-	return (valid, distance, angle,frame,ptime)
+	return (valid, x_pos, y_pos,frame_count,ptime)
 
 
 process_pool = ThreadPoolExecutor(1)
@@ -337,7 +353,11 @@ if __name__ == '__main__':
 	while ( NetworkTables.isConnected() == False or table == None):
 		# Attempt connection to NetworkTables
 		try:
-			NetworkTables.initialize(server="roboRIO-2811-FRC.local")
+			#NetworkTables.initialize(server="10.28.11.2")
+			NetworkTables.initialize(server='roborio-2811-frc.local')
+
+			NetworkTables.setUpdateRate(0.020)
+			NetworkTables.setWriteFlushPeriod(0.020)
 			table = NetworkTables.getTable("vision")
 			table.putBoolean("vision", True)
 		except:
@@ -355,6 +375,7 @@ if __name__ == '__main__':
 	while cam==None:
 		try:
 			cam = cv2.VideoCapture(1)
+			#cam = cv2.VideoCapture(0)
 			table.delete("camera_error")
 			print("Camera operational!")
 		except:
@@ -376,9 +397,14 @@ if __name__ == '__main__':
 		# Another reasonable spot is in except block of getBoolean, 
 		# Which should only happen if we lose our table.
 
+		#update our frame count
+		frame_count+=1
+		
 		# Check if robot is enabled
 		try:
 			enabled = table.getBoolean("enabled", False)
+			table.putNumber("heartbeat",frame_count)
+			time.sleep(0.015)
 		except:
 			print('ERR: NT not connected...')
 			if NetworkTables.isConnected():
@@ -387,28 +413,35 @@ if __name__ == '__main__':
 			else:
 				# The actual connection is at fault
 				# Try reconnecting
-				NetworkTables.initialize(server='roboRIO-2811-FRC.local')
+				#NetworkTables.initialize(server='10.28.11.2')
+				NetworkTables.initialize(server='roborio-2811-frc.local')
+				NetworkTables.setUpdateRate(0.020)
+				NetworkTables.setWriteFlushPeriod(0.020)
+
 				table = NetworkTables.getTable("vision")
 			continue
 		
 		if not enabled and not DEBUG:
 			print("Robot not enabled...")
+			continue
 
-		#update our frame count
-		frame_count+=1
 
 		# Shove all image processing subroutine calls here
 		try:
 			# Get diff image
 			valid,imgon,imgof = get_diff_sources()
+			
+			if valid == False:
+				continue
 
 			# Draw the diff if that's what you're into
 			if valid and drawmode==DRAW_DIFF:
 				try:
-					cv2.imshow('diff', img)
-					if cv2.waitKey(1) == 27:
-						cv2.destroyAllWindows()
-						break
+					#cv2.imshow('diff', img)
+					#if cv2.waitKey(1) == 27:
+						#cv2.destroyAllWindows()
+						#break
+					pass
 				except:pass
 
 			#If our worker thread is idle, break off and start 
@@ -436,7 +469,7 @@ if __name__ == '__main__':
 			print(error)
 			print(traceback.format_exc())
 
-			#raise(error) #comment this line to continue running despite errors
+			raise(error) #comment this line to continue running despite errors
 			continue
 			
 		# Sleep a bit. This should help with some of the overheating issues,
@@ -445,5 +478,5 @@ if __name__ == '__main__':
 		#time.sleep(0.1)
 		
 	# Post cleanup!
-	cv2.destroyAllWindows()
+	#cv2.destroyAllWindows()
 	GPIO.output(led_pin, False)
